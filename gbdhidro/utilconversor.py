@@ -1,6 +1,5 @@
 import re
 
-# Processa coluna de data e hora, tranforma para datetime nativo e adiciona informacao de timezone
 def get_gmt_offset(gmt_str):
     """
     Procura por string com o termo GMT e retira oque pode ser hora e minuto

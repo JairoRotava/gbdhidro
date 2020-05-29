@@ -1,16 +1,22 @@
 from setuptools import setup
 from setuptools import find_packages
+#from __future__ import print_function
+from setuptools import setup, find_packages
+from setuptools.command.test import test as TestCommand
+import io
+import codecs
+import os
+import sys
 
-pkg_location = 'src'
-pkg_name     = 'mplfinance'
+import
 
 setup(name='gbdhidro',
-    version='0.1',
-    description='Testing installation of Package',
-    url='#',
-    author='jairo',
-    author_email='jairo.rotava@gmail.com',
-    license='MIT',
-    package_dir={'': pkg_location},
-    packages=find_packages(where=pkg_location),
-    zip_safe=False)
+      version='0.0.1',
+      description='GBDHidro Package',
+      url='#',
+      author='jairo',
+      author_email='jairo.rotava@gmail.com',
+      license='MIT',
+      packages=['gbdhidro', 'gbdhidro.test'],
+      install_requires=['netCDF4'],
+      zip_safe=False)

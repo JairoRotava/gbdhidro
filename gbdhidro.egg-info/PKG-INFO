@@ -1,10 +1,11 @@
-Metadata-Version: 1.0
+Metadata-Version: 2.1
 Name: gbdhidro
-Version: 0.0.1
+Version: gbdhidro.-version-
 Summary: GBDHidro Package
 Home-page: #
 Author: jairo
 Author-email: jairo.rotava@gmail.com
 License: MIT
-Description: UNKNOWN
-Platform: UNKNOWN
+Description: descrcicao longa
+Platform: ahy
+Provides-Extra: testing

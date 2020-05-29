@@ -1,5 +1,4 @@
-# Test das coisas vem aqui
-
+# Arquivo para testes de funcionalidade
 def func(x):
     return x + 1
 

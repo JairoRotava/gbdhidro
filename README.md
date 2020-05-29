@@ -1,20 +1,22 @@
-# GBD Hidro
-## Instalação
+# GBD Hidro 
+ 
+## Descrição
+
+## Link do projeto
+
+## TravisCI [![Build Status](https://travis-ci.org/JairoRotava/gbdhidro.svg?branch=master)](https://travis-ci.org/JairoRotava/gbdhidro)
+
+ 
+
+
+## Quikckstart
 Para instalação no modo desenvolvedor copiar a pasta com a bilioteca e utilizar o comando:
 ```pip install -e gbdhidro/```
 
-## Descrição
-Biblioteca de para conversão de armazenamento de dados
-Colocar a descrição aqui
+## Dependencias
+- netcdf4: biblioteca para escrita e leitura de arquivos .nc.
 
-## TODO
-- Verificar dependencias no setup.py
-- Escrever descrições
+```pip install netcdf4```
+- cfchecker: biblioteca para verificação de padrão CF do arquivo .nc
 
-
-## Lista de tarefas
-    A description of your project
-    Links to the project's ReadTheDocs page
-    A TravisCI button showing the state of the build
-    "Quickstart" documentation (how to quickly install and use your project)
-    A list of non-Python dependencies (if any) and how to install them
+```pip install cfchecker```

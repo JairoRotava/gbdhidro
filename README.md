@@ -1,14 +1,12 @@
 # GBD Hidro 
  
 ## Descrição
-
+Bla bla bla bla
 ## Link do projeto
 
-## TravisCI [![Build Status](https://travis-ci.org/JairoRotava/gbdhidro.svg?branch=master)](https://travis-ci.org/JairoRotava/gbdhidro)
-
+## TravisCI 
+[![Build Status](https://travis-ci.org/JairoRotava/gbdhidro.svg?branch=master)](https://travis-ci.org/JairoRotava/gbdhidro)
  
-
-
 ## Quikckstart
 Para instalação no modo desenvolvedor copiar a pasta com a bilioteca e utilizar o comando:
 ```pip install -e gbdhidro/```

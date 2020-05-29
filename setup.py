@@ -8,15 +8,49 @@ import codecs
 import os
 import sys
 
-import
+import gbdhidro
 
-setup(name='gbdhidro',
-      version='0.0.1',
-      description='GBDHidro Package',
+here = os.path.abspath(os.path.dirname(__file__))
+
+def read(*filenames, **kwargs):
+    encoding = kwargs.get('encoding', 'utf-8')
+    sep = kwargs.get('sep', '\n')
+    buf = []
+    for filename in filenames:
+        with io.open(filename, encoding=encoding) as f:
+            buf.append(f.read())
+    return sep.join(buf)
+
+long_description = read('README.txt', 'CHANGES.txt')
+
+class PyTest(TestCommand):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        import pytest
+        errcode = pytest.main(self.test_args)
+        sys.exit(errcode)
+
+setup(
+      name='gbdhidro',
+      version='gbdhidro.__version__',
       url='#',
+      description='GBDHidro Package',
+      license='MIT',
       author='jairo',
       author_email='jairo.rotava@gmail.com',
-      license='MIT',
-      packages=['gbdhidro', 'gbdhidro.test'],
       install_requires=['netCDF4'],
+      tests_requires=['pytest'],
+      cmdclass={'test': PyTest},
+      long_description=long_description,
+      include_package_data=True,
+      platforms='ahy',
+      test_suite='gbdhidro.test.test_gbdhidro',
+      extras_require={
+            'testing': ['pytest'],
+      },
+      packages=['gbdhidro'],
       zip_safe=False)

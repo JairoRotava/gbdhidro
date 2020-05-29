@@ -21,7 +21,7 @@ def read(*filenames, **kwargs):
             buf.append(f.read())
     return sep.join(buf)
 
-long_description = read('README.txt', 'CHANGES.txt')
+#long_description = read('README.txt', 'CHANGES.txt')
 
 class PyTest(TestCommand):
     def finalize_options(self):
@@ -45,7 +45,7 @@ setup(
       install_requires=['netCDF4'],
       tests_requires=['pytest'],
       cmdclass={'test': PyTest},
-      long_description=long_description,
+      long_description='descrcicao longa',
       include_package_data=True,
       platforms='ahy',
       test_suite='gbdhidro.test.test_gbdhidro',

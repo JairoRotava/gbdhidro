@@ -1,0 +1,15 @@
+NOME;TIPO;Codigo;lat_utm;long_utm;lat_graus;long_graus;altitude_m
+Arroio Cadeia;Estação Hidrológica;H01;6507277,66;353394,29;-31,5602;-52,5447;61
+Arroio Caneleira;Estação Hidrológica;H02;6512371,99;351255,96;-31,514;-52,5665;99
+Sanga Ellert;Estação Linimétrica;L01;6527014,8;344802,73;-31,3811;-52,6321;304
+Estação Meteorológica;Estação Meteorológica;M01;6527954,86;345153,57;-31,3726;-52,6283;404
+Estação Pluviométrica 1;Estação Pluviométrica;P01;6526832,65;344894,62;-31,3827;-52,6312;322
+Estação Pluviométrica 2;Estação Pluviométrica;P02;6522090,75;341269,29;-31,425;-52,67;377
+Estação Pluviométrica 3;Estação Pluviométrica;P03;6523855,21;346703,58;-31,4098;-52,6126;315
+Estação Pluviométrica 4;Estação Pluviométrica;P04;6518520,55;346116,5;-31,4578;-52,6196;265
+Estação Pluviométrica 5;Estação Pluviométrica;P05;6516415,52;340939,63;-31,4761;-52,6744;300
+Estação Pluviométrica 6;Estação Pluviométrica;P06;6517845,84;351910,83;-31,4647;-52,5587;295
+Estação Pluviométrica 7;Estação Pluviométrica;P07;6511478,41;342078,63;-31,5208;-52,6632;273
+Estação Pluviométrica 8;Estação Pluviométrica;P08;6513771,41;346963,52;-31,5008;-52,6114;287
+Estação Pluviométrica 9;Estação Pluviométrica;P09;6511046,07;355337,14;-31,5264;-52,5237;126
+Estação Pluviométrica 10;Estação Pluviométrica;P10;6505516,36;344118,87;-31,5749;-52,6427;228

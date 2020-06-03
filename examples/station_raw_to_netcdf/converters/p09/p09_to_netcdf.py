@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Desenvolvimento de conversao arquivo p05 para netcdf
+# # Desenvolvimento de conversao arquivo h01 para netcdf
 # Este é um esqueleto para processamento dos arquivos csv/txt das plataformas, e conversão para netcdf, assim como preenchimento dos dados de informações (metadados). Os passos são os seguintes:
 # 1. Abre arquivo JSON onde informações de configuração, da plataforma e dos arquivo netcdf estão armazenadas. Isso é necessário para flexibilizar o código e permitir reutilizacao do código. Isso é vantajoso quando várias estações com mesmo modelo de arquivo de saída são utilizadas.
 # 2. Abertura do arquivo de imagem e conversão para base64. O arquivo netcdf não tem um tipo de variável adequado para armazenamento direto de arquivos binários. Ainda não esta fechado a melhor forma de armazenar esse tipo de dado dentro do netcdf, mas acho que converter o arquivo para baser64 (texto, muito utilizado em navegadores de internet) é um método razoavel. A vantagem dessa conversão é permitr armazenar os arquivos como texto simples, e fácil de recuperar. Esse formato ainda pode ser revisto.
@@ -11,8 +11,8 @@
 # 6. Inserção dos dados no arquivo netcdf
 # 7. Dump do arquivo para verificação
 # 8. Verificação do padrão CF
-
-# In[1]:
+# 
+# Após desenvolvimento é possível exportar o codigo para .py e utilizar o codigo diretamente na linha de comando.
 
 
 # Carrega bibliotecas de acordo com o necessario
@@ -21,200 +21,168 @@ import numpy as np
 from datetime import datetime
 import re
 import os
-
 from netCDF4 import Dataset,num2date, date2num
 from datetime import timezone, timedelta
-
 from netCDF4 import Dataset,num2date, date2num, stringtoarr
 import json
-
 from gbdhidro import utilconversor
 from gbdhidro import utilcf
 from gbdhidro.netcdfjson import NetCDFJSON
 import base64
-
 import argparse
-
 from io import BytesIO
 import logging
+# Pega path absoluto deste arquivo
+here = os.path.abspath(os.path.dirname(__file__))
 
-# Inicia logging
-logger = logging.getLogger(__name__)
+DEBUG = False
+JSON_FILE = os.path.join(here, 'p09.json')
+IMAGE_FILE = os.path.join(here, 'p09.jpg')
+FILE_PATH_DEBUG = '../../input/p09/p09.csv'
+OUTPUT_FOLDER_DEBUG = '../../output'
+OUTPUT_FILE_DEBUG = None
+GMT = -3
+DECIMAL = '.'
+SEPARATOR = ','
+VAR_LIST = {
+        'datetime': {'match': ['Date', 'Time'], 'pandas_col': None},
+        'precipitation': {'netcdf_var': 'precipitation', 'match': ['Chuva', 'mm'], 'pandas_col': None},
+    }
 
-
-# In[2]:
-
-
-# Verifica se esta no jupyter. Isso altera o comportamento do codigo
-IN_JUPYTER = utilconversor.isnotebook()
-if IN_JUPYTER:
-    DEBUG = True
-    logging.basicConfig(level=logging.DEBUG)
-    logger.info("Jupyter detectado. Alterando modo de operacao para DEBUG")
-else:
-    DEBUG = False
-    logging.basicConfig(level=logging.INFO)
-
-
-# In[3]:
-
-
-logger.info("Conversao para netcdf")
-
-
-# In[4]:
-
-
-if IN_JUPYTER:
-    from PIL import Image
-    get_ipython().run_line_magic('matplotlib', 'inline')
-    import matplotlib.pyplot as plt
-
-
-# In[5]:
 
 
 # Codigo de erro utilizado no shell em caso de problema
 ERROR_CODE = 1
-if not IN_JUPYTER:
+logger = logging.getLogger(__name__)
+
+if DEBUG:
+    logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.WARNING)
+
+if DEBUG:
+    # Esta em debug - seta essas variaveis de entrada para facilitar
+    FILE_PATH = FILE_PATH_DEBUG
+    OUTPUT_FOLDER = OUTPUT_FOLDER_DEBUG
+    OUTPUT_FILE = OUTPUT_FILE_DEBUG
+else:
+    # nao esta em debug. Pega informações da linha de comando
     parser = argparse.ArgumentParser(description='Converte arquivo para netCDF.')
     parser.add_argument("-i", "--input", help="nome do arquivo de entrada")
     parser.add_argument("-o", "--output", help="nome do arquivo de saida. Se nao for informado eh gerado automaticamente")
     parser.add_argument("-d", "--directory", help="nome do diretorio de saida")
     args = parser.parse_args()
-    
+
     OUTPUT_FOLDER = args.directory
     OUTPUT_FILE = args.output
     FILE_PATH = args.input
-    
+
     if FILE_PATH is None:
         parser.print_help()
         exit(ERROR_CODE)
-else:
-    # esta dentro do jupyter, utiliza valores padroes para debug
-    FILE_PATH = 'p05.csv'
-    OUTPUT_FOLDER = '.'
-    OUTPUT_FILE = None
-    
-# Arquivo com configuracao da estacao
-JSON_FILE = 'p05.json'
-
-
-# In[6]:
 
 
 # Abre arquivo json de configuração
 with open(JSON_FILE, 'r') as fp:
     json_data = json.load(fp)
 
-
-# In[7]:
-
-
-if IN_JUPYTER:
-    display(json_data['station'])
-
-
-# In[8]:
-
-
-# Nome do arquivo de dados
 STATION_NAME = json_data['station']['name']
-# String com identificador utilizado para certificar que eh
-# o arquivo da estao escolhida
-STATION_ID = json_data['station']['name_match_string']
+STATION_NAME_MATCH = json_data['station']['name_match_string']
 LATITUDE = json_data['station']['latitude']
 LONGITUDE = json_data['station']['longitude']
 ALTITUDE = json_data['station']['altitude']
-IMAGE_FILE = json_data['station']['image']
-DATETIME_MATCH = json_data['station']['datetime_match_string']
-PRECIPITATION_MATCH = json_data['station']['precipitation_match_string']
-
-
-
-# Seleciona encoding do arquivo
 ENCODING = json_data['station']['input_file_encoding']
-DECIMAL = json_data['station']['decimal_separator']
-SEPARATOR = json_data['station']['column_delimiter']
 
-
-# In[9]:
-
+#logger.debug("Conversao para estacao {}".format(STATION_NAME))
 
 # Le arquivo de imagem
 with open(IMAGE_FILE, "rb") as image_file:
     image_base64 = utilcf.bin2base64(image_file.read())
 
-
-# In[10]:
-
-
-fo = open(FILE_PATH, "r")
+# Le somente o cabecalho para ver se eh o arquivo procurado
+fo = open(FILE_PATH, "r", encoding=ENCODING)
 first_line = fo.readline()
-
-
-# In[11]:
-
-
-logger.debug(first_line)
-
-
-# In[12]:
-
-
-# Tenta encontrar 'plot title' na primeira linha para verificar se eh
-# arquivo no formato esperado
-if utilconversor.find_matches(first_line,[STATION_ID]):
-    logger.info('Processando estacao ID: ' + STATION_NAME)
-else:
-    logger.info("Erro: não é arquivo da estacao" + STATION_NAME)
-    
-
-
-# In[13]:
-
-
-# Extrai dados da aquisicao
-table = pd.read_csv(fo, sep=SEPARATOR, skiprows=0, verbose=False, na_filter=True,  header=0, encoding=ENCODING, decimal=DECIMAL, warn_bad_lines=True)
+second_line = fo.readline()
 fo.close()
 
-if IN_JUPYTER:
-    display(table)
-
-
-# In[14]:
-
-
-# Procura por coluna de datetime e variavel
-date_time_col = None
-precipitation_col = None
-for column in table.columns:
-    if utilconversor.find_matches(column,['date', 'time']):
-        date_time_col = column
-    if utilconversor.find_matches(column,['acum', 'chuva', 'mm']):
-        precipitation_col = column
-
-if date_time_col is None:
-    logger.error('Error, nao foi encontrada coluna de data')
+# Verifica se tem numero de serie correto
+# Procura por alguns termos especifcos para verificar se o arquivo
+# esta dentro do esperado
+print('Conversor estacao {} para netcdf'.format(STATION_NAME))
+if not utilconversor.find_matches(second_line, STATION_NAME_MATCH):
+    print('Erro ao detectar identificador, arquivo fora do padrao esperado')
     exit(ERROR_CODE)
-else:
-    logger.info('Coluna datetime: ' + date_time_col)
 
-if precipitation_col is None:
-    logger.error('Error, nao foi encontrada coluna de precipitacao')
-    exit(ERROR_CODE)
-else:
-    logger.info('Coluna precipitacao: ' + precipitation_col)
+# Le cabecalho da tabela
+# Estou abrindo e fechando o arquivo pq fica mais facil gerenciar. Não é o mais eficiente
+#fo = open(FILE_PATH, "r", encoding=ENCODING)
+# pula as primeiras 14 linhas
+#for i in range(14):
+#    fo.readline()
+#first_line = fo.readline()
+#fo.readline()
+#second_line = fo.readline()
+#first_line_sep = first_line.split()
+#second_line_sep = second_line.split()
+#header = ['Date', 'Time'] + first_line_sep
+#for l1, l2 in zip(first_line_sep, second_line_sep):
+#    header.append("{} {}".format(l1.strip(),l2.strip()))
+#fo.close()
+
+# Extrai dados da aquisicao
+table = pd.read_csv(FILE_PATH, sep=SEPARATOR, skiprows=1, verbose=False, na_filter=True, header=0, encoding=ENCODING, decimal=DECIMAL, warn_bad_lines=True, dtype=str)
+#table.columns = header
+#print(table)
+
+for key, value in VAR_LIST.items():
+    found = False
+    for column in table.columns:
+        if utilconversor.find_matches(column, value['match']):
+            value['pandas_col'] = column
+            found = True
+            break
+    if not found:
+        print('Erro, nao foi encontrada coluna {}'.format(key))
+        exit(ERROR_CODE)
+
+# Filtra linhas incorretas
+#bad_rows = []
+#for index, row in table.iterrows():
+#    date = row[VAR_LIST["date"]["pandas_col"]]
+#    time = row[VAR_LIST["time"]["pandas_col"]]
+    # Apaga estes elementos da lista pois ja foram utilizados
+    # evita atrapalhar algm codigo mais adiante
+    #del var_list['date']
+    #del var_list['time']
+    
+#    date_str = '{} {}'.format(date, time)
+#    try:
+#        date_time = pd.to_datetime(date_str, format='%d/%m/%Y %H:%M:%S')
+#    except:
+#        bad_rows.append(index)
+
+#if bad_rows:
+#    logger.debug('Foram removidas {} linhas com dados invalidos'.format(len(bad_rows)))
+#    table = table.drop(bad_rows)
 
 
-# In[15]:
+#date = table[VAR_LIST["date"]["pandas_col"]]
+#time = table[VAR_LIST["time"]["pandas_col"]]
+date_str = table[VAR_LIST['datetime']['pandas_col']]
+date_time = pd.to_datetime(date_str, format='%m/%d/%y %I:%M:%S %p')
 
 
 # Processa datetime para incluir timezone
-date_str = table[date_time_col]
-date_time = pd.to_datetime(date_str, format='%m/%d/%y %I:%M:%S %p')
-# extrai informacao de gmt
 gmt_hour_offset, gmt_minute_offset = utilconversor.get_gmt_offset(date_time.name)
+#gmt_hour_offset = GMT
+#gmt_minute_offset = 0
+
+# Erro de gmt.
+# TODO: Verificar como lidar com isso
+if gmt_hour_offset != GMT:
+    print('Erro: GMT diferente do esperado {} != {}'.format(gmt_hour_offset, GMT))
+    exit(ERROR_CODE)
+
 tzinfo=timezone(timedelta(hours=gmt_hour_offset, minutes=gmt_minute_offset))
 # gera os indices com informacao de fuso horarios incluido
 index = date_time.dt.tz_localize(tzinfo)
@@ -222,25 +190,7 @@ index = date_time.dt.tz_localize(tzinfo)
 index_utc = index.dt.tz_convert('UTC')
 first_day_str = utilcf.datetime2str(index_utc.iloc[0])
 last_day_str = utilcf.datetime2str(index_utc.iloc[-1])
-logger.info("Inicio e fim de medidas em UTC: {} - {}".format(first_day_str, last_day_str))
-
-
-# In[16]:
-
-
-# Encontra coluna com chuva
-precipitation = table[precipitation_col]
-
-if IN_JUPYTER:
-    display(precipitation)
-
-
-# In[17]:
-
-
-# Gera nome de arquivo de saida
-#file_name = '{}_{}_{}.nc'.format(STATION_NAME, first_day_str, last_day_str)
-#logger.info("Nome de arquivo de saida: {}".format(file_name))
+logger.debug("Inicio e fim de medidas em UTC: {} - {}".format(first_day_str, last_day_str))
 
 if OUTPUT_FILE is None:
     file_name = '{}_{}_{}.nc'.format(STATION_NAME, first_day_str, last_day_str)
@@ -255,17 +205,25 @@ else:
 logger.info("Nome de arquivo de saida: {}".format(file_name))
 
 
+# Insere lista de variaveis no netcdf
+# Pega colunas de dados (exclui data e hora)
+DATA_LIST = VAR_LIST
+del DATA_LIST['datetime']
+
+# Convert string to floats
+#table[DATA_LIST['precipitation']['pandas_col']] = table[DATA_LIST['precipitation']["pandas_col"]].str.replace(',', '').astype(float)
+#table[DATA_LIST['sediment']['pandas_col']] = table[DATA_LIST['sediment']["pandas_col"]].str.replace(',', '').astype(float)
+#table[DATA_LIST['level']['pandas_col']] = table[DATA_LIST['level']["pandas_col"]].str.replace(',', '').astype(float)
+#table[DATA_LIST['battery']['pandas_col']] = table[DATA_LIST['battery']["pandas_col"]].str.replace(',', '').astype(float)
+
 # ## Geracao de arquivo netCDF
-
-# In[18]:
-
 
 #nc_file_path = os.path.join(OUTPUT_FOLDER, file_name)
 # Cria arquivo netCDF
 nc_file = NetCDFJSON()
 nc_file.write(nc_file_path)
 # Le arquivo json com configuracao da estrutura do netcdf
-nc_file.load_json('p05.json')
+nc_file.load_json(JSON_FILE)
 nc_file.create_from_json()
 
 # pega handlers para dimensoes
@@ -278,18 +236,17 @@ lat = nc_file.get_variable('lat')
 lon = nc_file.get_variable('lon')
 alt = nc_file.get_variable('alt')
 station_name = nc_file.get_variable('station_name')
-precip = nc_file.get_variable('precipitation')
+#precip = nc_file.get_variable('precipitation')
 station_image = nc_file.get_variable('station_image')
 
-# Recupera qual o valor uilizado para valores que estao faltando
-FILL_VALUE = precip._FillValue
-
-
-# In[19]:
-
-
-# Substitui Nan por FILL_VALUE
-precipitation = precipitation.replace(np.nan, FILL_VALUE)
+for key, value in DATA_LIST.items():
+    nc_var = nc_file.get_variable(value['netcdf_var'])
+    FILL_VALUE = nc_var._FillValue
+    data_var = table[value['pandas_col']]
+    data_var = data_var.replace(np.nan, FILL_VALUE)
+    data_var = data_var.to_numpy()
+    nc_var[:] = data_var
+    
 
 # Seta variaveis
 nc_time = index_utc.to_numpy()
@@ -306,7 +263,7 @@ nc_inferior_bound_time[0] = nc_superior_bound_time[0]
 # combina bound inferior com bound superior
 bnds = np.stack((nc_inferior_bound_time, nc_superior_bound_time), axis=-1)
 
-nc_serie = precipitation.to_numpy()
+#nc_serie = precipitation.to_numpy()
 
 nc_station_name = STATION_NAME
 latitude = LATITUDE
@@ -320,14 +277,11 @@ alt[:] = np.array([altitude])
 time[:] = nc_time
 time_bnds[:] = bnds
 
-precip[:] = np.array(nc_serie)
+#precip[:] = np.array(nc_serie)
 
 station_name[:] = stringtoarr(nc_station_name, nameDim.size)
 station_image[:] = stringtoarr(image_base64, len(image_base64))
 station_image.file_name = IMAGE_FILE
-
-
-# In[20]:
 
 
 # Faz processamento para metadados
@@ -353,16 +307,11 @@ time0 = num2date(time[0], units=time.units, calendar=time.calendar)
 time_resolution = time1 - time0
 time_resolution_str = utilcf.timedelta2str(time_resolution)
 
-
-logger.info('Min/Max latitude: {}/{}'.format(min_lat,max_lat))
-logger.info('Min/Max longitude: {}/{}'.format(min_lon,max_lon))
-logger.info('Min/Max datetime: {}/{}'.format(min_time_str,max_time_str))
-logger.info('Time duration:{}'.format(time_delta_str))
-logger.info('Time resolution:{}'.format(time_resolution_str))
-
-
-# In[21]:
-
+logger.debug('Min/Max latitude: {}/{}'.format(min_lat,max_lat))
+logger.debug('Min/Max longitude: {}/{}'.format(min_lon,max_lon))
+logger.debug('Min/Max datetime: {}/{}'.format(min_time_str,max_time_str))
+logger.debug('Time duration:{}'.format(time_delta_str))
+logger.debug('Time resolution:{}'.format(time_resolution_str))
 
 # Atualiza metadados
 nc_file.rootgrp.geospatial_lat_min = min_lat
@@ -375,75 +324,8 @@ nc_file.rootgrp.time_coverage_duration = time_delta_str
 nc_file.rootgrp.time_coverage_resolution = time_resolution_str
 nc_file.rootgrp.id = file_name
 nc_file.rootgrp.date_created = utilcf.datetime2str(datetime.now(timezone.utc))
-
-
-# In[22]:
-
-
-#nc_file.rootgrp
-
-
-# In[23]:
-
-
-# Visualiza dados para confirma se esta tudo ok.
-# Date time deve ser linear, sem quebras abruptas
-if IN_JUPYTER:
-    fig, (ax0, ax1) = plt.subplots(ncols=2)
-    ax0.plot(time[:])
-    ax0.set_title('Date time')
-    ax1.plot(precip[:])
-    ax1.set_title('Variavel')
-    plt.show() 
-
-    # Mostra imagem
-    image = utilcf.base642bin(station_image[:])
-    print(station_image.file_name)
-    im = Image.open(image)
-    display(im)
-
-
-# In[24]:
-
-
-# Fecha e salva arquivo
 nc_file.close()
 
-
-# ## Dump do arquivo nc
-
-# In[25]:
-
-
-# Apresenta o dump do arquivo netcdf
-# Precisa instalar: sudo apt install netcdf-bin 
-if IN_JUPYTER:
-    cmd = '"' + nc_file_path + '"'
-    get_ipython().system('ncdump {  cmd }')
-
-
-# ## Verifica se arquivo .nc atende o CF Standard
-
-# In[26]:
-
-
-# Verifica compatibilidade com CF
-# Precisa instalar pip install cfchecker 
-# site: https://pypi.org/project/cfchecker/
-if IN_JUPYTER:
-    CF_VERSION = '1.7'
-    cmd = '-v ' + CF_VERSION + ' ' + '"' + nc_file_path + '"'
-    get_ipython().system('cfchecks {cmd}')
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
+# Sai com codigo zero - sucesso
+print('Arquivo de saida: {}'.format(nc_file_path))
+exit(0)

@@ -2,10 +2,11 @@ import os
 import glob
 import subprocess
 import logging
+import sys
 
 # Inicia logging
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 
 def get_converters(folder):
     """
@@ -30,22 +31,30 @@ converters_path = get_converters(CONVERTERS_FOLDER)
 input_files_path = get_input_files(INPUT_FOLDER)
 
 converter_not_found = []
+
+print('Iniciando conversao em lote')
+print('Diretorio de entrada {}'.format(INPUT_FOLDER))
+print('Diretorio de saida {}'.format(OUTPUT_FOLDER))
 for input_file in input_files_path:
-    logger.info('Processando arquivo {}'.format(input_file))
     # Passa arquivo por todos conversores disponiveis
     converted = False
+    print('{} '.format(os.path.basename(input_file)), end='')
     for converter in converters_path:
-        logger.debug('Executando conversor {}'.format(converter))
-        output = subprocess.run([converter, '-i', input_file, '-d', OUTPUT_FOLDER], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        output = subprocess.run([converter, '-i', input_file, '-d', OUTPUT_FOLDER], stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+        logger.debug('({}) {}'.format(os.path.basename(converter), output.stdout))
         if output.returncode == 0:
-            logger.info('Convertido com sucesso por {}'.format(converter))
+            print('(converted by {}) '.format(os.path.basename(converter)))
             converted = True
-    if not converted:
-        logger.error('Nenhum conversor encontrado')
+            break
+
+    if converted:
+        pass
+    else:
+        print('ERROR')
         converter_not_found.append(input_file)
 
-
 # Mostra arqvuios que não foram convertidos
-logger.info('Arquivos não convertidos: {}'.format(converter_not_found))
+#logger.debug('Arquivos não convertidos: {}'.format(converter_not_found))
 
 

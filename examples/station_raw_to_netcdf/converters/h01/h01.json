@@ -1,11 +1,12 @@
 {
     "station": {
-        "name": "p05",
+        "name": "h01",
         "latitude": -31.3726,
         "longitude": -52.6283,
         "altitude": 404.0,
-        "name_match_string": ["20497856"],
-        "input_file_encoding": "utf-8"
+        "image": "h01.jpg",
+        "name_match_string": ["E102 02 2012A"],
+        "input_file_encoding": "iso-8859-1"
     },
     "dimensions": [
         {
@@ -121,18 +122,46 @@
         },        
         {
             "createVariable": {
-                "varname": "temperature",
+                "varname": "sediment",
                 "datatype": "f4",
                 "dimensions": "time",
                 "fill_value": -999.9
             },
-            "long_name": "temperature",
-            "standard_name": "air_temperature",
-            "units": "degree_Celsius",
+            "long_name": "sediment",
+            "standard_name": "sediment_??",
+            "units": "mv",
             "coordinates": "time lon lat alt station_name",
             "cell_methods": "time: sum longitude: point latitude: point",
             "comment": ""
         },
+        {
+            "createVariable": {
+                "varname": "level",
+                "datatype": "f4",
+                "dimensions": "time",
+                "fill_value": -999.9
+            },
+            "long_name": "nivel rio",
+            "standard_name": "level_??",
+            "units": "cm",
+            "coordinates": "time lon lat alt station_name",
+            "cell_methods": "time: sum longitude: point latitude: point",
+            "comment": ""
+        },
+        {
+            "createVariable": {
+                "varname": "battery",
+                "datatype": "f4",
+                "dimensions": "time",
+                "fill_value": -999.9
+            },
+            "long_name": "battery voltage",
+            "standard_name": "battery_voltage",
+            "units": "V",
+            "coordinates": "time lon lat alt station_name",
+            "cell_methods": "time: sum longitude: point latitude: point",
+            "comment": ""
+        },        
         {
             "createVariable": {
                 "varname": "precipitation",

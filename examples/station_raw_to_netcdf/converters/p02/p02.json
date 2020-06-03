@@ -1,10 +1,11 @@
 {
     "station": {
-        "name": "p05",
+        "name": "p02",
         "latitude": -31.3726,
         "longitude": -52.6283,
         "altitude": 404.0,
-        "name_match_string": ["20497856"],
+        "image": "p02.jpg",
+        "name_match_string": ["20497860"],
         "input_file_encoding": "utf-8"
     },
     "dimensions": [

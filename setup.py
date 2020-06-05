@@ -42,7 +42,7 @@ setup(
       license='MIT',
       author='jairo',
       author_email='jairo.rotava@gmail.com',
-      install_requires=['netCDF4'],
+      install_requires=['netCDF4', 'pandas'],
       tests_requires=['pytest'],
       cmdclass={'test': PyTest},
       long_description='descrcicao longa',

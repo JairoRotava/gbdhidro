@@ -64,3 +64,81 @@ def get_data(filename, delimiter=DELIMITER, encoding=ENCODING):
     header = pandas.read_csv(filename, delimiter=delimiter, header=0, skiprows=1, nrows=0, encoding=encoding)
     table = pandas.read_csv(filename, delimiter=delimiter, header=0, skiprows=1, encoding=encoding, usecols=header)
     return table
+
+
+def process_data(text):
+    levels = []
+    levels.append(['Details'])
+    levels.append(['Series:', 'Event Type:'])
+    levels.append(['Devices', 'Deployment Info', 'Series Statistics', 'Filter Parameters'])
+    levels.append(['Device Info'])
+    # teste = re.split(r'[\n](?=Details|Series: |Event Type: )',extra)
+    # r'(?:Series:|Event Type:).+?[\n](?=Series:|Event Type:|$)'
+    return get_all_groups(text, levels)
+
+
+def get_group(text, level):
+    regex1 = '(?:'
+    regex2 = '.+?[\n](?='
+    first = True
+    for m in level:
+        if not first:
+            regex1 += '|'
+            regex2 += '|'
+        else:
+            first = False
+        regex1 += m
+        regex2 += m
+
+    regex1 += ')'
+    regex2 += '|$)'
+    regex = regex1 + regex2
+    match = re.compile(regex, re.S)
+    return match.findall(text)
+
+
+def text_to_dict(text):
+    fields = text.split('\n')
+    d = {}
+    for f in fields:
+        s = f.split(':', 1)
+        if len(s) == 2:
+            d.update({s[0].strip(): s[1].strip()})
+    return d
+
+
+def get_all_groups(text, levels, level_number=0):
+    n_levels = len(levels)
+    groups = []
+    temp = get_group(text, levels[level_number])
+
+    output = {}
+    level_number += 1
+    for l in temp:
+        [key, val] = l.split("\n", 1)
+        new_val = None
+        if level_number < n_levels:
+            new_val = get_all_groups(val, levels, level_number)
+        if new_val:
+            val = new_val
+        else:
+            val = text_to_dict(val)
+
+        output.update({key: val})
+    return output
+
+
+# Teste/Desenvolvimento do modulo
+if __name__ == '__main__':
+    import os
+    here = os.path.abspath(os.path.dirname(__file__))
+    filename = os.path.join(here, './test/data/p08.csv')
+    title, serial_number, header, extra = get_info(filename)
+    table = get_data(filename)
+    print('Title: {}'.format(title))
+    print('Serial number: {}'.format(serial_number))
+    print('Header: {}'.format(header))
+    print('Extra: {}'.format(extra))
+    print('Dados: {}'.format(table))
+    print('Extra processado {}'.format(process_data(extra)))
+

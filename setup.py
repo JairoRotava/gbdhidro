@@ -52,5 +52,5 @@ setup(
       extras_require={
             'testing': ['pytest'],
       },
-      packages=['gbdhidro'],
+      packages=['gbdhidro', 'gbdhidro.hobo'],
       zip_safe=False)

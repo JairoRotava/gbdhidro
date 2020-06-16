@@ -2,9 +2,10 @@ import pandas
 import re
 
 # Tamanho maximo em linhas do da informacao extra que pode estar dentro do arquivo
-MAX_EXTRA_SIZE = 500
-ENCODING = 'utf-8'
-DELIMITER = ','
+_MAX_EXTRA_SIZE = 500
+_ENCODING = 'utf-8'
+_DELIMITER = ','
+
 
 def find_title(str_line):
     # Extrai titulo de string
@@ -26,7 +27,12 @@ def find_serial_number(str_line):
         return None
 
 
-def get_info(filename, delimiter=DELIMITER, encoding=ENCODING):
+def get_info(filename, delimiter=_DELIMITER, encoding=_ENCODING):
+    """
+    Extrai detalhes da aquisicao. O arquivo deve ser exportado
+    no hoboware com a opcao de detalhes ativada, caso contrario retorna
+    valor vazio
+    """
     # Obtem nome das colunas
     header = list(pandas.read_csv(filename, delimiter=delimiter, header=0, skiprows=1, nrows=0, encoding=encoding))
 
@@ -38,7 +44,7 @@ def get_info(filename, delimiter=DELIMITER, encoding=ENCODING):
     # Informacoes extras
     n_cols = len(header)
     extra = []
-    for i in range(MAX_EXTRA_SIZE):
+    for i in range(_MAX_EXTRA_SIZE):
         # separa nos separadores, mas não se tiver dentro de ""
         fields = re.split(delimiter + '(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)', fo.readline())
         n_fields = len(fields)
@@ -56,7 +62,10 @@ def get_info(filename, delimiter=DELIMITER, encoding=ENCODING):
     return title, sn, header, extra
 
 
-def get_data(filename, delimiter=DELIMITER, encoding=ENCODING):
+def get_data(filename, delimiter=_DELIMITER, encoding=_ENCODING):
+    """
+    Retorna tabela pandas com os valores da aquisicao
+    """
     # Extrai dados
     # Primeiro extrai o cabechalo e depois os dados pois arquivo hobo com informacaoes extra tem mais
     # colunas de dados que o header, oque quebra a conversao do pandas. Sabendo o cabacalho
@@ -74,10 +83,10 @@ def process_data(text):
     levels.append(['Device Info'])
     # teste = re.split(r'[\n](?=Details|Series: |Event Type: )',extra)
     # r'(?:Series:|Event Type:).+?[\n](?=Series:|Event Type:|$)'
-    return get_all_groups(text, levels)
+    return _get_all_groups(text, levels)
 
 
-def get_group(text, level):
+def _get_group(text, level):
     regex1 = '(?:'
     regex2 = '.+?[\n](?='
     first = True
@@ -97,7 +106,7 @@ def get_group(text, level):
     return match.findall(text)
 
 
-def text_to_dict(text):
+def _text_to_dict(text):
     fields = text.split('\n')
     d = {}
     for f in fields:
@@ -107,10 +116,10 @@ def text_to_dict(text):
     return d
 
 
-def get_all_groups(text, levels, level_number=0):
+def _get_all_groups(text, levels, level_number=0):
     n_levels = len(levels)
     groups = []
-    temp = get_group(text, levels[level_number])
+    temp = _get_group(text, levels[level_number])
 
     output = {}
     level_number += 1
@@ -118,11 +127,11 @@ def get_all_groups(text, levels, level_number=0):
         [key, val] = l.split("\n", 1)
         new_val = None
         if level_number < n_levels:
-            new_val = get_all_groups(val, levels, level_number)
+            new_val = _get_all_groups(val, levels, level_number)
         if new_val:
             val = new_val
         else:
-            val = text_to_dict(val)
+            val = _text_to_dict(val)
 
         output.update({key: val})
     return output

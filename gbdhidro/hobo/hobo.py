@@ -49,17 +49,17 @@ def get_info(filename, delimiter=_DELIMITER, encoding=_ENCODING):
         fields = re.split(delimiter + '(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)', fo.readline())
         n_fields = len(fields)
         if n_fields > n_cols:
-            extra.append(''.join(fields[n_cols:]))
+            extra.append(delimiter.join(fields[n_cols:]))
         elif n_fields < n_cols:
             # Provavelmente uma linha invalida. ignora
             pass
         else:
             # numero de campos é igual ao de dados. termina procura por dados extra
             break
-    extra = ''.join(extra)
+    details = ''.join(extra)
     fo.close()
 
-    return title, sn, header, extra
+    return title, sn, header, details
 
 
 def get_data(filename, delimiter=_DELIMITER, encoding=_ENCODING):
@@ -75,7 +75,7 @@ def get_data(filename, delimiter=_DELIMITER, encoding=_ENCODING):
     return table
 
 
-def process_data(text):
+def process_details(text):
     levels = []
     levels.append(['Details'])
     levels.append(['Series:', 'Event Type:'])
@@ -149,5 +149,5 @@ if __name__ == '__main__':
     print('Header: {}'.format(header))
     print('Extra: {}'.format(extra))
     print('Dados: {}'.format(table))
-    print('Extra processado {}'.format(process_data(extra)))
+    print('Extra processado {}'.format(process_details(extra)))
 

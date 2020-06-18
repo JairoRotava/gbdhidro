@@ -26,7 +26,7 @@ def test_files():
     for file in files:
         title, serial_number, header, extra = hobo.get_info(file)
         table = hobo.get_data(file)
-        proc_extra = hobo.process_data(extra)
+        proc_extra = hobo.process_details(extra)
 
 
     # Foi tudo ok. Lanca um True - não precisa...just in case.

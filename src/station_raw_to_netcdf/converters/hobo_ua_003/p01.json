@@ -14,8 +14,8 @@
         },
         {
             "createDimension": {
-                "dimname": "image_size",
-                "size": null
+                "dimname": "nv",
+                "size": 2
             }
         }
     ],
@@ -29,9 +29,20 @@
             "long_name": "time of measurement",
             "standard_name": "time",
             "units": "seconds since 1970-01-01 00:00:00 UTC",
+            "bounds": "time_bnds",
             "axis": "T",
             "calendar": "gregorian",
             "comment": ""
+        },
+        {
+            "createVariable": {
+                "varname": "time_bnds",
+                "datatype": "f8",
+                "dimensions": [
+                    "time",
+                    "nv"
+                ]
+            }
         },
         {
             "createVariable": {
@@ -94,7 +105,7 @@
             "standard_name": "lwe_thickness_of_precipitation_amount",
             "units": "mm",
             "coordinates": "time lon lat alt station_name",
-            "cell_methods": "time: sum longitude: point latitude: point",
+            "cell_methods": "time: sum (interval: 1 day)",
             "comment": ""
         }
     ],
@@ -133,7 +144,7 @@
             "time_coverage_start": "20120131T070000Z",
             "time_coverage_end": "20120131T083000Z",
             "time_coverage_duration": "P1Y",
-            "time_coverage_resolution": "PT10.S",
+            "time_coverage_resolution": "PT5M",
             "standard_name_vocabulary": "NetCDF Climate and Forecast (CF) Metadata Convention version 18",
             "license": "ESA CCI Data Policy: free and open access",
             "platform": "Envisat",

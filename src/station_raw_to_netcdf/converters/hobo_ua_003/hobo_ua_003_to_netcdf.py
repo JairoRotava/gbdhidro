@@ -156,18 +156,40 @@ timeDim = nc_file.get_dimension('time')
 nameDim = nc_file.get_dimension('name_strlen')
 # pega handlers para variaveis
 time = nc_file.get_variable('time')
+time_bnds = nc_file.get_variable('time_bnds')
 lat = nc_file.get_variable('lat')
 lon = nc_file.get_variable('lon')
 alt = nc_file.get_variable('alt')
 station_name = nc_file.get_variable('station_name')
 
-nc_time = index_utc.to_numpy()
-nc_time = date2num(nc_time, units=time.units, calendar=time.calendar)
+np_time = index_utc.to_numpy()
+nc_time = date2num(np_time, units=time.units, calendar=time.calendar)
+# A precipitacao eh acumulada no tempo. O CF estabelece que neste tipo de caso
+# eh necessario informar as fronteiras do tempo no qual eh feito o acumulo. No caso de ser a medida
+# acumulada nos ultimos 5 minutos as fronteiras sao o tempo atual - 5 min, e o tempo atual
+
+nc_superior_bound_time = nc_time
+#if station_time_resolution == 'PT5M':
+#    delta = timedelta(minutes=5)
+#elif station_time_resolution == 'PT1D':
+#    delta = timedelta(days=1)
+#else:
+#    print('Erro. Intervalo de tempo ainda nao implementada {}'.format(station_time_resolution))
+#    exit(ERROR_CODE)
+
+delta = utilcf.period_iso8601_to_relativetime(station_time_resolution)
+inferior_bound_time = np_time - delta
+
+nc_inferior_bound_time = date2num(inferior_bound_time, units=time.units, calendar=time.calendar)
+# combina bound inferior com bound superior
+nc_time_bnds = np.stack((nc_inferior_bound_time, nc_superior_bound_time), axis=-1)
+
 # Seta variaveis
 lat[:] = np.array([station_latitude])
 lon[:] = np.array([station_longitude])
 alt[:] = np.array([station_altitude])
 time[:] = nc_time
+time_bnds[:] = nc_time_bnds
 station_name[:] = stringtoarr(station_id, nameDim.size)
 # Insere informacoes sobre a precipitacao
 nc_var = nc_file.get_variable('precipitation')

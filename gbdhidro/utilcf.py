@@ -1,12 +1,16 @@
+import re
 from datetime import datetime
 import base64
 from io import BytesIO
+from dateutil.relativedelta import relativedelta
+
 
 def datetime2str(date_time):
     """
     Retorna datetime em formato do CF em string. Utilizar somente valor UTC.
     """
     return date_time.strftime('%Y%m%dT%H%M%SZ')
+
 
 def timedelta2str(value):
     """
@@ -46,6 +50,45 @@ def timedelta2str(value):
     seconds = seconds.rstrip('0')
     time += '{}S'.format(seconds)
     return u'P' + date + time
+
+
+def period_iso8601_to_relativetime(text):
+    p = re.compile(
+        r'P(?P<years>\d+(?=Y))*\D*(?P<months>\d+(?=M))*\D*(?P<weeks>\d+(?=W))*\D*(?P<days>\d+(?=D))*\D*T*(?P<hours>\d+(?=H))*\D*(?P<minutes>\d+(?=M))*\D*(?P<seconds>\d+(?=S))*\D*',
+        re.IGNORECASE)
+    m = p.search(text)
+    years = 0
+    months = 0
+    weeks = 0
+    days = 0
+    hours = 0
+    minutes = 0
+    seconds = 0
+
+    if m['years']:
+        years = float(m['years'])
+    if m['months']:
+        months = float(m['months'])
+    if m['weeks']:
+        weeks = float(m['weeks'])
+    if m['days']:
+        days = float(m['days'])
+    if m['hours']:
+        hours = float(m['hours'])
+    if m['minutes']:
+        minutes = float(m['minutes'])
+    if m['seconds']:
+        seconds = float(m['seconds'])
+
+    delta = relativedelta(
+        years=years,
+        months=months,
+        weeks=weeks,
+        days=days,
+        hours=hours,
+        minutes=minutes,
+        seconds=seconds)
+    return delta
 
 def bin2base64(value):
     """

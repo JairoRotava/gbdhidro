@@ -21,14 +21,14 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 DEBUG = True
 ENCODING = 'utf-8'
-config_file = './stations_info.csv'
+config_file = 'stations_info.csv'
 JSON_FILE = os.path.join(here, 'precipitation_netcdf.json')
 EXPECTED_TIME_RESOLUTION = 'PT5M'
 #IMAGE_FILE = os.path.join(here, 'p01.jpg')
-FILE_PATH_DEBUG = 'EHP07034.csv'
+FILE_PATH_DEBUG = '/media/jairo/Dados/Jairo/Projetos/Samuel data/git/GBD-Hidro/src/station_raw_to_netcdf/input/hobo UA-003 precipitacao/EHP02039.csv'
 OUTPUT_FOLDER_DEBUG = './'
 OUTPUT_FILE_DEBUG = None
-GMT = -3
+#GMT = -3
 DECIMAL = '.'
 SEPARATOR = ','
 
@@ -81,57 +81,103 @@ station_altitude = row.iloc[0]['Altitude [m]']
 station_datetime_col = row.iloc[0]['Coluna data/hora']
 station_gmt = int(row.iloc[0]['GMT'])
 station_time_resolution = row.iloc[0]['Intervalo medidas (ISO8601)']
+station_variable_col = row.iloc[0]['Coluna variavel']
+
+# Encontra colune datetime
+datetime_col = None
+for col_name in header:
+    found = False
+    if utilconversor.find_matches(col_name, station_datetime_col):
+        datetime_col = col_name
+        found = True
+        break
+if not datetime_col:
+    print('ERRO: nao foi encontrada coluna {}'.format(station_datetime_col))
+    exit(ERROR_CODE)
+
+# Encontra timezone e verifica se esta dentro do valor esperado
+gmt_hour_offset, gmt_minute_offset = utilconversor.get_gmt_offset(datetime_col)
+if station_gmt != gmt_hour_offset:
+    print('AVISO: fuso horario encontrado (GMT{}) diferente do esperado (GMT{}). Utilizando GMT{}. Isso esta correto?'.format(gmt_hour_offset, station_gmt, gmt_hour_offset))
 
 # Encontra nome de coluna
 # Isso eh necessario pois pode incluir o numero de serie
 # por isso faz matching parcial
-variable_col = row.iloc[0]['Coluna variavel']
-station_variable_col = None
+
+variable_col = None
 for col_name in header:
     found = False
-    if utilconversor.find_matches(col_name, variable_col):
-        station_variable_col = col_name
+    if utilconversor.find_matches(col_name, station_variable_col):
+        variable_col = col_name
         found = True
         break
-if not station_variable_col:
-    print('Erro, nao foi encontrada coluna de precipitacao')
+if not variable_col:
+    print('ERRO: nao foi encontrada coluna {}'.format(station_variable_col))
     exit(ERROR_CODE)
 
 # Verifica resolucao de tempo se esta dentro da esperada
 details = hobo.process_details(details)
-serie = details['Details']['Series: ' + variable_col]
+
+# TODO: Encontrar o campo no dicionario sem ser case sensitive
+#serie = details['Details']['Series: ' + variable_col]
+details = details['Details']
+serie = None
+for k, v in details.items():
+    found = False
+    if utilconversor.find_matches(k, ['Series:', station_variable_col]):
+        serie = v
+        found = True
+        break
+if not serie:
+    print('ERRO: nao foi encontrada informacao da serie nos detalhes')
+    exit(ERROR_CODE)
+
+
 filter_param = serie['Filter Parameters']
 filter_type = filter_param['Filter Type']
 filter_interval = filter_param['Filter Interval']
 
 # TODO: isso nao esta bom, os formatos utilizados nao sao flexiveis e iguais. Automatizar mehlor isso no futuro
 if filter_type != 'Sum of event values':
-    print('Erro: serie com filtro inesperado: {}'.format(filter_type))
+    print('ERRO: serie com filtro inesperado: {}'.format(filter_type))
     exit(ERROR_CODE)
 
-if station_time_resolution == 'PT5M':
-    if filter_interval != '5 Minutes':
-        print('Erro: serie com intervalo {}, esperado era {}'.format(filter_interval, station_time_resolution))
-        exit(ERROR_CODE)
-if station_time_resolution == 'PT1D':
-    if filter_interval != '1 Day':
-        print('Erro: serie com intervalo {}, esperado era {}'.format(filter_interval, station_time_resolution))
-        exit(ERROR_CODE)
+if filter_interval == '5 Minutes':
+    if station_time_resolution != 'PT5M':
+        print('AVISO: serie com intervalo {}, esperado era {}'.format(filter_interval, station_time_resolution))
+        station_time_resolution = 'PT5M'
+elif filter_interval == '1 Day':
+    if station_time_resolution != 'PT1D':
+        print('AVISO: serie com intervalo {}, esperado era {}'.format(filter_interval, station_time_resolution))
+        station_time_resolution = 'PT1D'
 else:
-    print('Erro: resolucao temporal ainda nao implenteada: {}'.format(station_time_resolution))
+    print('ERRO: resolucao temporal ainda nao implenteada: {}'.format(filter_interval))
     exit(ERROR_CODE)
 
-if station_time_resolution != EXPECTED_TIME_RESOLUTION:
-    print('AVISO: resolucao de tempo ({}) diferente da esperada ({})'.format(station_time_resolution, EXPECTED_TIME_RESOLUTION))
+
+
+
+
+#if station_time_resolution == 'PT5M':
+#    if filter_interval != '5 Minutes':
+#        print('ERRO: serie com intervalo {}, esperado era {}'.format(filter_interval, station_time_resolution))
+#        exit(ERROR_CODE)
+#elif station_time_resolution == 'PT1D':
+#    if filter_interval != '1 Day':
+#        print('ERRO: serie com intervalo {}, esperado era {}'.format(filter_interval, station_time_resolution))
+#        exit(ERROR_CODE)
+#else:
+#    print('Erro: resolucao temporal ainda nao implenteada: {}'.format(station_time_resolution))
+#    exit(ERROR_CODE)
 
 # Extrai dados da aquisicao
 table = hobo.get_data(FILE_PATH)
 
 # Processa dados de data/hora
-date_str = table[station_datetime_col]
+date_str = table[datetime_col]
 date_time = pd.to_datetime(date_str, format='%m/%d/%y %I:%M:%S %p')
-gmt_hour_offset = station_gmt
-gmt_minute_offset = 0
+#gmt_hour_offset = station_gmt
+#gmt_minute_offset = 0
 tzinfo=timezone(timedelta(hours=gmt_hour_offset, minutes=gmt_minute_offset))
 # gera os indices com informacao de fuso horarios incluido
 index = date_time.dt.tz_localize(tzinfo)
@@ -203,7 +249,7 @@ station_name[:] = stringtoarr(station_id, nameDim.size)
 # Insere informacoes sobre a precipitacao
 nc_var = nc_file.get_variable('precipitation')
 FILL_VALUE = nc_var._FillValue
-data_var = table[station_variable_col]
+data_var = table[variable_col]
 data_var = data_var.replace(np.nan, FILL_VALUE)
 data_var = data_var.to_numpy()
 nc_var[:] = data_var
@@ -247,7 +293,7 @@ print('Numero de pontos: {}'.format(data_len))
 print('Min/Max latitude: {} / {}'.format(min_lat, max_lat))
 print('Min/Max longitude: {} / {}'.format(min_lon, max_lon))
 print('Min/Max datetime: {} / {}'.format(min_time_str, max_time_str))
-print('Time duration:{}'.format(time_delta_str))
-print('Time resolution:{}'.format(time_resolution_str))
+print('Duracao: {}'.format(time_delta_str))
+print('Resolucao: {}'.format(time_resolution_str))
 
 exit(0)

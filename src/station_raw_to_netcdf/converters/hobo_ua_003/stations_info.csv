@@ -1,2 +1,3 @@
 #,Nome,Tipo,Modelo,Codigo,Plot Title,Numero de serie,Coluna data/hora,Coluna variavel,Intervalo medidas (ISO8601),Latitude [graus],Longitude [graus],Altitude [m],GMT
-5,Estação Pluviométrica 1,Estação Pluviométrica,HOBO UA-003-64 Pendant Temp/Event,EHP-07,EHP-07,10440731,"Date Time, GMT-03:00","Soma Acum.: Chuva, mm",PT1D,-31.3827,-52.6312,322,-3
+0,Estação Pluviométrica 1,Estação Pluviométrica,HOBO UA-003-64 Pendant Temp/Event,EHP-07,EHP-07,10440731,"Date Time, GMT-03:00","Soma Acum.: Chuva, mm",PT1D,-31.3827,-52.6312,322,-3
+1,Estação Pluviométrica 1,Estação Pluviométrica,HOBO UA-003-64 Pendant Temp/Event,EHP-01,EH-P01,10440731,"Date Time, GMT-03:00","Soma Acum.: Chuva, mm",PT1D,-31.3827,-52.6312,322,-3

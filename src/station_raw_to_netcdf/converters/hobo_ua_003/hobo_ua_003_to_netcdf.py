@@ -22,9 +22,10 @@ here = os.path.abspath(os.path.dirname(__file__))
 DEBUG = True
 ENCODING = 'utf-8'
 config_file = './stations_info.csv'
-JSON_FILE = os.path.join(here, 'p01.json')
-IMAGE_FILE = os.path.join(here, 'p01.jpg')
-FILE_PATH_DEBUG = './EHP07034.csv'
+JSON_FILE = os.path.join(here, 'precipitation_netcdf.json')
+EXPECTED_TIME_RESOLUTION = 'PT5M'
+#IMAGE_FILE = os.path.join(here, 'p01.jpg')
+FILE_PATH_DEBUG = 'EHP07034.csv'
 OUTPUT_FOLDER_DEBUG = './'
 OUTPUT_FILE_DEBUG = None
 GMT = -3
@@ -58,13 +59,19 @@ else:
 # Abre arquivo e extrai informacoes
 title, serial_number, header, details = hobo.get_info(FILE_PATH)
 
+if not details:
+    # Erro - nao tem nenhuma informacao sobre esse titulo de plot
+    print('ERRO: arquivo sem detalhes. Arquivo deve ser exportado com detalhes para permitir verificacao')
+    exit(ERROR_CODE)
+
+
 # Abre arquivo com lista de sensores e informacoes extra
 # Abre arquivo de configuracao e retira dados importantes
 cfgs = pd.read_csv(config_file)
 row = cfgs.loc[cfgs['Plot Title'] == title]
 if row.empty:
     # Erro - nao tem nenhuma informacao sobre esse titulo de plot
-    print('Buuu - Nao encontrei nada com esse titulo de plot')
+    print('ERRO: arquivo nao reconhecido')
     exit(ERROR_CODE)
 station_id = row.iloc[0]['Codigo']
 station_sn = row.iloc[0]['Numero de serie']
@@ -114,6 +121,8 @@ else:
     print('Erro: resolucao temporal ainda nao implenteada: {}'.format(station_time_resolution))
     exit(ERROR_CODE)
 
+if station_time_resolution != EXPECTED_TIME_RESOLUTION:
+    print('AVISO: resolucao de tempo ({}) diferente da esperada ({})'.format(station_time_resolution, EXPECTED_TIME_RESOLUTION))
 
 # Extrai dados da aquisicao
 table = hobo.get_data(FILE_PATH)

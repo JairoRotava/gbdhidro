@@ -23,63 +23,76 @@ from gbdhidro.hobo import hobo
 # Pega path absoluto deste arquivo
 here = os.path.abspath(os.path.dirname(__file__))
 
-DEBUG = True
-ENCODING = 'utf-8'
-config_file = 'stations_info.csv'
-JSON_FILE = os.path.join(here, 'precipitation_netcdf.json')
-EXPECTED_TIME_RESOLUTION = 'PT5M'
-#IMAGE_FILE = os.path.join(here, 'p01.jpg')
+DEBUG = False
 FILE_PATH_DEBUG = '/media/jairo/Dados/Jairo/Projetos/Samuel data/git/GBD-Hidro/src/station_raw_to_netcdf/input/hobo UA-003 precipitacao/EHP02039.csv'
-OUTPUT_FOLDER_DEBUG = './'
-OUTPUT_FILE_DEBUG = None
-#GMT = -3
+#OUTPUT_FOLDER_DEBUG = './'
+#OUTPUT_FILE_DEBUG = None
+
+
+# Parametros default
+FILE_PATH = None
+OUTPUT_FOLDER = ''
+OUTPUT_FILE = None
+JSON_FILE = os.path.join(here, 'precipitation_netcdf.json')
+CONFIG_FILE = os.path.join(here, 'stations_info.csv')
 DECIMAL = '.'
 SEPARATOR = ','
+ENCODING = 'utf-8'
 
 # Codigo de erro utilizado no shell em caso de problema
 ERROR_CODE = 1
+
 
 print('HOBO Pendant Event Data Logger (UA-003-64) to NetCDF conversion tool')
 
 if DEBUG:
     # Esta em debug - seta essas variaveis de entrada para facilitar
     FILE_PATH = FILE_PATH_DEBUG
-    OUTPUT_FOLDER = OUTPUT_FOLDER_DEBUG
-    OUTPUT_FILE = OUTPUT_FILE_DEBUG
+    #OUTPUT_FOLDER = OUTPUT_FOLDER_DEBUG
+    #OUTPUT_FILE = OUTPUT_FILE_DEBUG
     print('DEBUG MODE')
 else:
     # nao esta em debug. Pega informações da linha de comando
-    parser = argparse.ArgumentParser(description='Converte arquivo para netCDF.')
-    parser.add_argument("-i", "--input", help="nome do arquivo de entrada")
-    parser.add_argument("-o", "--output", help="nome do arquivo de saida. Se nao for informado eh gerado automaticamente")
-    parser.add_argument("-d", "--directory", help="nome do diretorio de saida")
+    parser = argparse.ArgumentParser(description='Conversion tool arguments:')
+    parser.add_argument("-i", "--input", help="hobo input file (.csv)")
+    parser.add_argument("-o", "--output", help="output file")
+    parser.add_argument("-d", "--directory", help="output directory")
+    parser.add_argument("-c", "--config", help="stations config file (.csv)")
+    parser.add_argument("-n", "--netcdf", help="json file with NetCDF file information")
     args = parser.parse_args()
 
-    OUTPUT_FOLDER = args.directory
-    OUTPUT_FILE = args.output
-    FILE_PATH = args.input
-
-    if FILE_PATH is None:
+    if args.netcdf:
+        JSON_FILE = args.netcdf
+    if args.config:
+        CONFIG_FILE = args.config
+    if args.directory:
+        OUTPUT_FOLDER = args.directory
+    if args.output:
+        OUTPUT_FILE = args.output
+    if args.input:
+        FILE_PATH = args.input
+    else:
         parser.print_help()
         exit(ERROR_CODE)
 
 # Abre arquivo e extrai informacoes
 title, serial_number, header, details = hobo.get_info(FILE_PATH)
 
-if not details:
-    # Erro - nao tem nenhuma informacao sobre esse titulo de plot
-    print('ERRO: arquivo sem detalhes. Arquivo deve ser exportado com detalhes para permitir verificacao')
-    exit(ERROR_CODE)
+#if not details:
+#    # Erro - nao tem nenhuma informacao sobre esse titulo de plot
+#    print('ERRO: arquivo sem detalhes. Arquivo deve ser exportado com detalhes para permitir verificacao')
+#    exit(ERROR_CODE)
 
 
-# Abre arquivo com lista de sensores e informacoes extra
-# Abre arquivo de configuracao e retira dados importantes
-cfgs = pd.read_csv(config_file)
-row = cfgs.loc[cfgs['Plot Title'] == title]
+# Le arquivo .csv com configuracoes e informacoes adicionais das estacoes
+cfgs = pd.read_csv(CONFIG_FILE)
+row = cfgs.loc[cfgs['Plot Title'] == title]    # Procura por plot tittle igual do arquivo de entrada
 if row.empty:
     # Erro - nao tem nenhuma informacao sobre esse titulo de plot
-    print('ERRO: arquivo nao reconhecido')
+    print('ERROR: plot title ({}) not found in config file'.format(title))
     exit(ERROR_CODE)
+
+# Extrai informacoes importantes sobre a estacao do arquivo de configuracao
 station_id = row.iloc[0]['Codigo']
 station_sn = row.iloc[0]['Numero de serie']
 station_latitude = row.iloc[0]['Latitude [graus]']
@@ -87,10 +100,9 @@ station_longitude = row.iloc[0]['Longitude [graus]']
 station_altitude = row.iloc[0]['Altitude [m]']
 station_datetime_col = row.iloc[0]['Coluna data/hora']
 station_gmt = int(row.iloc[0]['GMT'])
-station_time_resolution = row.iloc[0]['Intervalo medidas (ISO8601)']
+#station_time_resolution = row.iloc[0]['Intervalo medidas (ISO8601)']
 station_variable_col = row.iloc[0]['Coluna variavel']
-
-# Encontra colune datetime
+# Encontra coluna datetime de formar flexivel (procura por nome parecido)
 datetime_col = None
 for col_name in header:
     found = False
@@ -99,18 +111,14 @@ for col_name in header:
         found = True
         break
 if not datetime_col:
-    print('ERRO: nao foi encontrada coluna {}'.format(station_datetime_col))
+    print('ERROR: col ({}) not found'.format(station_datetime_col))
     exit(ERROR_CODE)
-
 # Encontra timezone e verifica se esta dentro do valor esperado
 gmt_hour_offset, gmt_minute_offset = utilconversor.get_gmt_offset(datetime_col)
 if station_gmt != gmt_hour_offset:
-    print('AVISO: fuso horario encontrado (GMT{}) diferente do esperado (GMT{}). Utilizando GMT{}. Isso esta correto?'.format(gmt_hour_offset, station_gmt, gmt_hour_offset))
+    print('Warning: found timezone (GMT{}) different from config (GMT{}). Using GMT{}.'.format(gmt_hour_offset, station_gmt, gmt_hour_offset))
 
-# Encontra nome de coluna
-# Isso eh necessario pois pode incluir o numero de serie
-# por isso faz matching parcial
-
+# Encontra nome de coluna de dados por semelhança
 variable_col = None
 for col_name in header:
     found = False
@@ -119,25 +127,25 @@ for col_name in header:
         found = True
         break
 if not variable_col:
-    print('ERRO: nao foi encontrada coluna {}'.format(station_variable_col))
+    print('ERROR: col ({}) not found'.format(station_variable_col))
     exit(ERROR_CODE)
 
 # Verifica resolucao de tempo se esta dentro da esperada
-details = hobo.process_details(details)
+#details = hobo.process_details(details)
 
 # TODO: Encontrar o campo no dicionario sem ser case sensitive
 #serie = details['Details']['Series: ' + variable_col]
-details = details['Details']
-serie = None
-for k, v in details.items():
-    found = False
-    if utilconversor.find_matches(k, ['Series:', station_variable_col]):
-        serie = v
-        found = True
-        break
-if not serie:
-    print('ERRO: nao foi encontrada informacao da serie nos detalhes')
-    exit(ERROR_CODE)
+#details = details['Details']
+#serie = None
+#for k, v in details.items():
+#    found = False
+#    if utilconversor.find_matches(k, ['Series:', station_variable_col]):
+#        serie = v
+#        found = True
+#        break
+#if not serie:
+#    print('ERRO: nao foi encontrada informacao da serie nos detalhes')
+#    exit(ERROR_CODE)
 
 
 #filter_param = serie['Filter Parameters']
@@ -147,7 +155,7 @@ if not serie:
 # TODO: isso nao esta bom, os formatos utilizados nao sao flexiveis e iguais. Automatizar mehlor isso no futuro
 #if filter_type != 'Sum of event values':
 #    print('ERRO: serie com filtro inesperado: {}'.format(filter_type))
-    exit(ERROR_CODE)
+#    exit(ERROR_CODE)
 
 #if filter_interval == '5 Minutes':
 #    if station_time_resolution != 'PT5M':
@@ -202,11 +210,13 @@ first_day_str = utilcf.datetime2str(index_utc.iloc[0])
 last_day_str = utilcf.datetime2str(index_utc.iloc[-1])
 #logger.debug("Inicio e fim de medidas em UTC: {} - {}".format(first_day_str, last_day_str))
 
+# Gera nome do arquivo de saida se ainda nao foi definido
 if OUTPUT_FILE is None:
     file_name = '{}_{}_{}.nc'.format(station_id, first_day_str, last_day_str)
 else:
     file_name = OUTPUT_FILE
 
+# Adiciona pasta de saida no path se definido
 if OUTPUT_FOLDER is None:
     nc_file_path = file_name
 else:
@@ -224,7 +234,7 @@ timeDim = nc_file.get_dimension('time')
 nameDim = nc_file.get_dimension('name_strlen')
 # pega handlers para variaveis
 time = nc_file.get_variable('time')
-time_bnds = nc_file.get_variable('time_bnds')
+#time_bnds = nc_file.get_variable('time_bnds')
 lat = nc_file.get_variable('lat')
 lon = nc_file.get_variable('lon')
 alt = nc_file.get_variable('alt')
@@ -236,7 +246,7 @@ nc_time = date2num(np_time, units=time.units, calendar=time.calendar)
 # eh necessario informar as fronteiras do tempo no qual eh feito o acumulo. No caso de ser a medida
 # acumulada nos ultimos 5 minutos as fronteiras sao o tempo atual - 5 min, e o tempo atual
 
-nc_superior_bound_time = nc_time
+#nc_superior_bound_time = nc_time
 #if station_time_resolution == 'PT5M':
 #    delta = timedelta(minutes=5)
 #elif station_time_resolution == 'PT1D':
@@ -245,19 +255,19 @@ nc_superior_bound_time = nc_time
 #    print('Erro. Intervalo de tempo ainda nao implementada {}'.format(station_time_resolution))
 #    exit(ERROR_CODE)
 
-delta = utilcf.period_iso8601_to_relativetime(station_time_resolution)
-inferior_bound_time = np_time - delta
+#delta = utilcf.period_iso8601_to_relativetime(station_time_resolution)
+#inferior_bound_time = np_time - delta
 
-nc_inferior_bound_time = date2num(inferior_bound_time, units=time.units, calendar=time.calendar)
+#nc_inferior_bound_time = date2num(inferior_bound_time, units=time.units, calendar=time.calendar)
 # combina bound inferior com bound superior
-nc_time_bnds = np.stack((nc_inferior_bound_time, nc_superior_bound_time), axis=-1)
+#nc_time_bnds = np.stack((nc_inferior_bound_time, nc_superior_bound_time), axis=-1)
 
 # Seta variaveis
 lat[:] = np.array([station_latitude])
 lon[:] = np.array([station_longitude])
 alt[:] = np.array([station_altitude])
 time[:] = nc_time
-time_bnds[:] = nc_time_bnds
+#time_bnds[:] = nc_time_bnds
 station_name[:] = stringtoarr(station_id, nameDim.size)
 # Insere informacoes sobre a precipitacao
 nc_var = nc_file.get_variable('precipitation')
@@ -286,7 +296,7 @@ max_time_str = utilcf.datetime2str(max_time)
 time_delta = max_time - min_time
 time_delta_str = utilcf.timedelta2str(time_delta)
 # time resolution
-time_resolution_str = station_time_resolution
+#time_resolution_str = station_time_resolution
 
 # Atualiza metadados
 nc_file.rootgrp.geospatial_lat_min = min_lat
@@ -302,12 +312,14 @@ nc_file.rootgrp.date_created = utilcf.datetime2str(datetime.now(timezone.utc))
 nc_file.close()
 
 # Imprime resultado
-print('Arquivo de saida: {}'.format(nc_file_path))
-print('Numero de pontos: {}'.format(data_len))
-print('Min/Max latitude: {} / {}'.format(min_lat, max_lat))
-print('Min/Max longitude: {} / {}'.format(min_lon, max_lon))
-print('Min/Max datetime: {} / {}'.format(min_time_str, max_time_str))
-print('Duracao: {}'.format(time_delta_str))
+print('Input file: {}'.format(FILE_PATH))
+print('Output file: {}'.format(nc_file_path))
+print('Latitude Min/Max: {} / {}'.format(min_lat, max_lat))
+print('Longitude Min/Max: {} / {}'.format(min_lon, max_lon))
+print('Datetime (UTC) Min/Max: {} / {}'.format(min_time_str, max_time_str))
+print('Coverage duration: {}'.format(time_delta_str))
+print('Data length: {}'.format(data_len))
+
 #print('Resolucao: {}'.format(time_resolution_str))
 
 exit(0)

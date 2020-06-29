@@ -11,12 +11,6 @@
                 "dimname": "name_strlen",
                 "size": 23
             }
-        },
-        {
-            "createDimension": {
-                "dimname": "nv",
-                "size": 2
-            }
         }
     ],
     "variables": [
@@ -29,20 +23,9 @@
             "long_name": "time of measurement",
             "standard_name": "time",
             "units": "seconds since 1970-01-01 00:00:00 UTC",
-            "bounds": "time_bnds",
             "axis": "T",
             "calendar": "gregorian",
             "comment": ""
-        },
-        {
-            "createVariable": {
-                "varname": "time_bnds",
-                "datatype": "f8",
-                "dimensions": [
-                    "time",
-                    "nv"
-                ]
-            }
         },
         {
             "createVariable": {
@@ -101,30 +84,29 @@
                 "dimensions": "time",
                 "fill_value": -999.9
             },
-            "long_name": "precipitation amount",
-            "standard_name": "lwe_thickness_of_precipitation_amount",
+            "long_name": "accumulated precipitation amount",
+            "standard_name": "accumulated(precipitation_amount)",
             "units": "mm",
             "coordinates": "time lon lat alt station_name",
-            "cell_methods": "time: sum",
             "comment": ""
         }
     ],
     "global_attributes": [
         {
-            "title": "precipitation",
+            "title": "",
             "institution": "Universidade Federal de Pelotas",
             "source": "",
             "history": "",
             "references": "",
             "tracking_id": "",
-            "Conventions": "CF-1.7",
+            "Conventions": "CF-1.7, MET-name",
             "product_version": "",
             "summary": "",
             "keywords": "",
             "id": "",
             "naming_authority": "",
-            "keywords_vocabulary": "precipitation, lwe_thickness_of_precipitation_amount",
-            "comment": "",
+            "keywords_vocabulary": "",
+            "comment": "Padrao baseada no standard CF-1.7 com adaptacoes sugerias pelo MET-name",
             "date_created": "",
             "creator_name": "Grupo de Pesquisa em Hidrologia e Modelagem Hidrológica em Bacias Hidrográficas",
             "creator_url": "https://wp.ufpel.edu.br/hidrologiaemodelagemhidrologica/",
@@ -149,7 +131,7 @@
             "license": "",
             "platform": "",
             "Sensor": "",
-            "key_variables": "precipitation"
+            "key_variables": ""
         }
     ]
 }

@@ -2,6 +2,10 @@
 # coding: utf-8
 
 # # Converte .csv de hoboware para estacao de precipitacao
+# Preferencialmente é salvo o evento da cacambinha tombando. Isso se deve pelos seguintes motivos:
+# - Esse é o dado fundamental, é possivel gerar qualquer dado filtrado a partir desse
+# - Algum erro do operador na configuracao (por exemplo no intervalo da soma) não influencia a saida, e o erro pode
+# ser corrigido facilmente
 
 # Carrega bibliotecas de acordo com o necessario
 import os
@@ -35,11 +39,14 @@ SEPARATOR = ','
 # Codigo de erro utilizado no shell em caso de problema
 ERROR_CODE = 1
 
+print('HOBO Pendant Event Data Logger (UA-003-64) to NetCDF conversion tool')
+
 if DEBUG:
     # Esta em debug - seta essas variaveis de entrada para facilitar
     FILE_PATH = FILE_PATH_DEBUG
     OUTPUT_FOLDER = OUTPUT_FOLDER_DEBUG
     OUTPUT_FILE = OUTPUT_FILE_DEBUG
+    print('DEBUG MODE')
 else:
     # nao esta em debug. Pega informações da linha de comando
     parser = argparse.ArgumentParser(description='Converte arquivo para netCDF.')
@@ -133,26 +140,26 @@ if not serie:
     exit(ERROR_CODE)
 
 
-filter_param = serie['Filter Parameters']
-filter_type = filter_param['Filter Type']
-filter_interval = filter_param['Filter Interval']
+#filter_param = serie['Filter Parameters']
+#filter_type = filter_param['Filter Type']
+#filter_interval = filter_param['Filter Interval']
 
 # TODO: isso nao esta bom, os formatos utilizados nao sao flexiveis e iguais. Automatizar mehlor isso no futuro
-if filter_type != 'Sum of event values':
-    print('ERRO: serie com filtro inesperado: {}'.format(filter_type))
+#if filter_type != 'Sum of event values':
+#    print('ERRO: serie com filtro inesperado: {}'.format(filter_type))
     exit(ERROR_CODE)
 
-if filter_interval == '5 Minutes':
-    if station_time_resolution != 'PT5M':
-        print('AVISO: serie com intervalo {}, esperado era {}'.format(filter_interval, station_time_resolution))
-        station_time_resolution = 'PT5M'
-elif filter_interval == '1 Day':
-    if station_time_resolution != 'PT1D':
-        print('AVISO: serie com intervalo {}, esperado era {}'.format(filter_interval, station_time_resolution))
-        station_time_resolution = 'PT1D'
-else:
-    print('ERRO: resolucao temporal ainda nao implenteada: {}'.format(filter_interval))
-    exit(ERROR_CODE)
+#if filter_interval == '5 Minutes':
+#    if station_time_resolution != 'PT5M':
+#        print('AVISO: serie com intervalo {}, esperado era {}'.format(filter_interval, station_time_resolution))
+#        station_time_resolution = 'PT5M'
+#elif filter_interval == '1 Day':
+#    if station_time_resolution != 'PT1D':
+#        print('AVISO: serie com intervalo {}, esperado era {}'.format(filter_interval, station_time_resolution))
+#        station_time_resolution = 'PT1D'
+#else:
+#    print('ERRO: resolucao temporal ainda nao implenteada: {}'.format(filter_interval))
+#    exit(ERROR_CODE)
 
 
 
@@ -173,8 +180,14 @@ else:
 # Extrai dados da aquisicao
 table = hobo.get_data(FILE_PATH)
 
+# Separa precipitacao
+precipitation = table[variable_col]
+precipitation.index = table[datetime_col]
+precipitation = precipitation.dropna()  # Deleta os NaN
+
 # Processa dados de data/hora
-date_str = table[datetime_col]
+#date_str = table[datetime_col]
+date_str = precipitation.index.to_series()
 date_time = pd.to_datetime(date_str, format='%m/%d/%y %I:%M:%S %p')
 #gmt_hour_offset = station_gmt
 #gmt_minute_offset = 0
@@ -249,7 +262,8 @@ station_name[:] = stringtoarr(station_id, nameDim.size)
 # Insere informacoes sobre a precipitacao
 nc_var = nc_file.get_variable('precipitation')
 FILL_VALUE = nc_var._FillValue
-data_var = table[variable_col]
+#data_var = table[variable_col]
+data_var = precipitation
 data_var = data_var.replace(np.nan, FILL_VALUE)
 data_var = data_var.to_numpy()
 nc_var[:] = data_var
@@ -282,7 +296,7 @@ nc_file.rootgrp.geospatial_lon_max = max_lon
 nc_file.rootgrp.time_coverage_start = min_time_str
 nc_file.rootgrp.time_coverage_end = max_time_str
 nc_file.rootgrp.time_coverage_duration = time_delta_str
-nc_file.rootgrp.time_coverage_resolution = time_resolution_str
+#nc_file.rootgrp.time_coverage_resolution = time_resolution_str
 nc_file.rootgrp.id = file_name
 nc_file.rootgrp.date_created = utilcf.datetime2str(datetime.now(timezone.utc))
 nc_file.close()
@@ -294,6 +308,6 @@ print('Min/Max latitude: {} / {}'.format(min_lat, max_lat))
 print('Min/Max longitude: {} / {}'.format(min_lon, max_lon))
 print('Min/Max datetime: {} / {}'.format(min_time_str, max_time_str))
 print('Duracao: {}'.format(time_delta_str))
-print('Resolucao: {}'.format(time_resolution_str))
+#print('Resolucao: {}'.format(time_resolution_str))
 
 exit(0)

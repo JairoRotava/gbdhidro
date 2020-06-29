@@ -3,6 +3,7 @@ import glob
 import subprocess
 import logging
 import sys
+import os
 
 # Inicia logging
 logger = logging.getLogger(__name__)
@@ -12,7 +13,17 @@ def get_converters(folder):
     """
     Retorna todos os .py encontrados no diretorio e subdirecotrios folder
     """
-    return glob.glob(os.path.join(folder, '**/*.py'), recursive=True)
+    converters = glob.glob(os.path.join(folder, '**/*.py'), recursive=True)
+    # Remove test files
+    conv_out = []
+    for c in converters:
+        fname = os.path.basename(c)
+        # Descarta nomes com a string test
+        if fname.find('test') == -1:
+            conv_out.append(c)
+        else:
+            print('Descartando conversor com test: {}'.format(c))
+    return conv_out
 
 def get_input_files(folder):
     """
@@ -28,6 +39,7 @@ INPUT_FOLDER = os.path.join(THIS_PATH, 'input')
 
 # Ecnontra todos conversores disponiveis
 converters_path = get_converters(CONVERTERS_FOLDER)
+print(converters_path)
 input_files_path = get_input_files(INPUT_FOLDER)
 
 converter_not_found = []

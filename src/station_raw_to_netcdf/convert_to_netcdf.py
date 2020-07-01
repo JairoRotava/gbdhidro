@@ -9,6 +9,17 @@ import os
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
 
+# Formato do diretorio de saida
+# gbd/<projeto>/<fonte>/<id>/arquivos onde:
+# por exemplo:
+# gbd/estacoes/observacionais/EH-P02/<projeto>_<source>_<id>_20200101T010101Z_20200202T020202Z
+# As informações de <projeto> <fonte> e <id> devem estra armazenadas em algum arquico e apartir do ID do arquivo
+# deve ser enviado automaticamnete para o diretorio correot. Pensar melhor como fazer isso. Os arquivos nc devem ter
+# o projeto e a fonte dos dados internamente
+#
+# Formato do rquivo: ID_Datainicail_datafinal
+# O ID deve ser único dentro de um projeto/fonte
+
 def get_converters(folder):
     """
     Retorna todos os .py encontrados no diretorio e subdirecotrios folder

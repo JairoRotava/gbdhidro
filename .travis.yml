@@ -1,8 +1,9 @@
 language: python
 python:
     - "3.6"
+before_install:
+  - sudo apt-get -y install udunits
 install:
     - pip install .
-    - sudo apt install udunits-bin
 script:
     - pytest

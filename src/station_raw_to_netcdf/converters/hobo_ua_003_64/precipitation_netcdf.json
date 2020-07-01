@@ -85,7 +85,8 @@
                 "fill_value": -999.9
             },
             "long_name": "accumulated precipitation amount",
-            "standard_name": "accumulated(precipitation_amount)",
+            "standard_name": "lwe_thickness_of_precipitation_amount",
+            "cell_method": "time: ​​sum ​​(accumulated ​​since ​​the ​​value ​​was ​​0)",
             "units": "mm",
             "coordinates": "time lon lat alt station_name",
             "comment": ""
@@ -94,15 +95,17 @@
     "global_attributes": [
         {
             "title": "",
+            "summary": "",
+            "keywords": "",
+            "Conventions": "CF-1.7",
+
             "institution": "Universidade Federal de Pelotas",
             "source": "",
             "history": "",
             "references": "",
             "tracking_id": "",
-            "Conventions": "CF-1.7, MET-name",
             "product_version": "",
-            "summary": "",
-            "keywords": "",
+
             "id": "",
             "naming_authority": "",
             "keywords_vocabulary": "",

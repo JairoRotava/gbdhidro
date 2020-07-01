@@ -20,10 +20,13 @@ from gbdhidro import utilcf
 from gbdhidro.netcdfjson import NetCDFJSON
 from gbdhidro.hobo import hobo
 
+VERSION = '0.0.1'
+TOOL_NAME = 'HOBO Pendant Event Data Logger (UA-003-64) to NetCDF conversion tool v.' + VERSION
+
 # Pega path absoluto deste arquivo
 here = os.path.abspath(os.path.dirname(__file__))
 
-DEBUG = False
+DEBUG = True
 FILE_PATH_DEBUG = '/media/jairo/Dados/Jairo/Projetos/Samuel data/git/GBD-Hidro/src/station_raw_to_netcdf/input/hobo UA-003 precipitacao/EHP02039.csv'
 #OUTPUT_FOLDER_DEBUG = './'
 #OUTPUT_FILE_DEBUG = None
@@ -43,7 +46,7 @@ ENCODING = 'utf-8'
 ERROR_CODE = 1
 
 
-print('HOBO Pendant Event Data Logger (UA-003-64) to NetCDF conversion tool')
+print(TOOL_NAME)
 
 if DEBUG:
     # Esta em debug - seta essas variaveis de entrada para facilitar
@@ -271,6 +274,9 @@ time[:] = nc_time
 station_name[:] = stringtoarr(station_id, nameDim.size)
 # Insere informacoes sobre a precipitacao
 nc_var = nc_file.get_variable('precipitation')
+nc_file.rootgrp.keywords = [nc_var.standard_name, nc_var.units]
+nc_file.rootgrp.key_variables = 'precipitation'
+
 FILL_VALUE = nc_var._FillValue
 #data_var = table[variable_col]
 data_var = precipitation
@@ -309,6 +315,7 @@ nc_file.rootgrp.time_coverage_duration = time_delta_str
 #nc_file.rootgrp.time_coverage_resolution = time_resolution_str
 nc_file.rootgrp.id = file_name
 nc_file.rootgrp.date_created = utilcf.datetime2str(datetime.now(timezone.utc))
+nc_file.rootgrp.history = '({}) Created with {}'.format(nc_file.rootgrp.date_created, TOOL_NAME)
 nc_file.close()
 
 # Imprime resultado
@@ -322,4 +329,10 @@ print('Data length: {}'.format(data_len))
 
 #print('Resolucao: {}'.format(time_resolution_str))
 
-exit(0)
+from cfchecker.cfchecks import main
+import sys
+
+# Checa se arquivo atende padrao CF
+print('')
+sys.argv = ['', nc_file_path]
+sys.exit(main())

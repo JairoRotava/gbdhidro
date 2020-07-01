@@ -3,6 +3,6 @@ python:
     - "3.6"
 install:
     - pip install .
-    - sudo apt install udunits
+    - sudo apt install udunits-bin
 script:
     - pytest

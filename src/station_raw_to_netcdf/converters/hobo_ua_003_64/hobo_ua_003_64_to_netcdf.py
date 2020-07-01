@@ -27,7 +27,7 @@ TOOL_NAME = 'HOBO Pendant Event Data Logger (UA-003-64) to NetCDF conversion too
 here = os.path.abspath(os.path.dirname(__file__))
 
 DEBUG = True
-FILE_PATH_DEBUG = '/media/jairo/Dados/Jairo/Projetos/Samuel data/git/GBD-Hidro/src/station_raw_to_netcdf/input/hobo UA-003 precipitacao/EHP02039.csv'
+FILE_PATH_DEBUG = './test/data/EHP02039.csv'
 #OUTPUT_FOLDER_DEBUG = './'
 #OUTPUT_FILE_DEBUG = None
 
@@ -53,7 +53,7 @@ if DEBUG:
     FILE_PATH = FILE_PATH_DEBUG
     #OUTPUT_FOLDER = OUTPUT_FOLDER_DEBUG
     #OUTPUT_FILE = OUTPUT_FILE_DEBUG
-    print('DEBUG MODE')
+    print('WARNING: DEBUG MODE')
 else:
     # nao esta em debug. Pega informações da linha de comando
     parser = argparse.ArgumentParser(description='Conversion tool arguments:')

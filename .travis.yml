@@ -3,7 +3,7 @@ python:
     - "3.6"
 before_install:
   - sudo apt-get update
-  - sudo apt-get -y install udunits
+  - sudo apt-get -y install udunits-bin
 install:
     - pip install .
 script:

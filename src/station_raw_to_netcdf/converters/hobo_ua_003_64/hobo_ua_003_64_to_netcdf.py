@@ -26,7 +26,7 @@ TOOL_NAME = 'HOBO Pendant Event Data Logger (UA-003-64) to NetCDF conversion too
 # Pega path absoluto deste arquivo
 here = os.path.abspath(os.path.dirname(__file__))
 
-DEBUG = True
+DEBUG = False
 FILE_PATH_DEBUG = './test/data/EHP02039.csv'
 #OUTPUT_FOLDER_DEBUG = './'
 #OUTPUT_FILE_DEBUG = None

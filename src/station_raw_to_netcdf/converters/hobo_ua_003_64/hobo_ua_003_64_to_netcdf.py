@@ -38,6 +38,7 @@ CONFIG_FILE = os.path.join(here, 'stations_info.csv')
 DECIMAL = '.'
 SEPARATOR = ','
 ENCODING = 'utf-8'
+RUN_CFCHECKS = False
 
 # Codigo de erro utilizado no shell em caso de problema
 ERROR_CODE = 1
@@ -327,6 +328,7 @@ print('Data length: {}'.format(data_len))
 #print('Resolucao: {}'.format(time_resolution_str))
 
 # Checa se arquivo atende padrao CF utilizando o cfchecks
-print('\nRunning cfchecks')
-sys.argv = ['', nc_file_path]
-sys.exit(main())
+if RUN_CFCHECKS:
+    print('\nRunning cfchecks')
+    sys.argv = ['', nc_file_path]
+    sys.exit(main())

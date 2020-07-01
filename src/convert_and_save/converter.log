@@ -1,0 +1,16 @@
+Succeed conversion:
+
+Failed conversion:
+../station_raw_to_netcdf/input/h01/EHHS01042.Txt
+../station_raw_to_netcdf/input/h01/EHHS01043_1122_cota45cm.Txt
+../station_raw_to_netcdf/input/h01/EHHS01044_1140_cota44cm.Txt
+../station_raw_to_netcdf/input/h01/h01.txt
+../station_raw_to_netcdf/input/h02/EHHS02052.csv
+../station_raw_to_netcdf/input/h02/EHHS02053_cota_abaixo_regua.csv
+../station_raw_to_netcdf/input/l01/EHL01053.csv
+../station_raw_to_netcdf/input/l01/EHL01054_0,5cm.csv
+../station_raw_to_netcdf/input/l02/EHL02050.csv
+../station_raw_to_netcdf/input/l02/EHL02051.csv
+../station_raw_to_netcdf/input/m01/EHM01113.txt
+../station_raw_to_netcdf/input/m01/EHM01114.txt
+../station_raw_to_netcdf/input/m01/m01.txt

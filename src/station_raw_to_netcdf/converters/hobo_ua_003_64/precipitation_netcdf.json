@@ -94,27 +94,20 @@
     ],
     "global_attributes": [
         {
-            "title": "",
-            "summary": "",
+            "title": "Observed precipitation raw data",
+            "summary": "Observed precipitation data",
             "keywords": "",
             "Conventions": "CF-1.7",
 
             "institution": "Universidade Federal de Pelotas",
-            "source": "",
+            "instrument": "HOBO Pendant Event 64K (UA-003-64)",
             "history": "",
-            "references": "",
-            "tracking_id": "",
-            "product_version": "",
 
             "id": "",
-            "naming_authority": "",
-            "keywords_vocabulary": "",
-            "comment": "Padrao baseada no standard CF-1.7 com adaptacoes sugerias pelo MET-name",
+            "comment": "",
             "date_created": "",
             "creator_name": "Grupo de Pesquisa em Hidrologia e Modelagem Hidrológica em Bacias Hidrográficas",
             "creator_url": "https://wp.ufpel.edu.br/hidrologiaemodelagemhidrologica/",
-            "creator_email": "",
-            "project": "",
             "geospatial_lat_min": 0.0,
             "geospatial_lat_max": 0.0,
             "geospatial_lat_units": "degrees_north",
@@ -129,11 +122,6 @@
             "time_coverage_start": "",
             "time_coverage_end": "",
             "time_coverage_duration": "",
-            "time_coverage_resolution": "",
-            "standard_name_vocabulary": "",
-            "license": "",
-            "platform": "",
-            "Sensor": "",
             "key_variables": ""
         }
     ]

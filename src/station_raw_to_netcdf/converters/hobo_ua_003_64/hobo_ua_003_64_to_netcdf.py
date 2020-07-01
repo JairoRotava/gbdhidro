@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Converte .csv de hoboware para estacao de precipitacao
-# Preferencialmente é salvo o evento da cacambinha tombando. Isso se deve pelos seguintes motivos:
-# - Esse é o dado fundamental, é possivel gerar qualquer dado filtrado a partir desse
-# - Algum erro do operador na configuracao (por exemplo no intervalo da soma) não influencia a saida, e o erro pode
-# ser corrigido facilmente
-
 # Carrega bibliotecas de acordo com o necessario
 import os
 import argparse
@@ -19,6 +13,9 @@ from gbdhidro import utilconversor
 from gbdhidro import utilcf
 from gbdhidro.netcdfjson import NetCDFJSON
 from gbdhidro.hobo import hobo
+from cfchecker.cfchecks import main
+import sys
+
 
 VERSION = '0.0.1'
 TOOL_NAME = 'HOBO Pendant Event Data Logger (UA-003-64) to NetCDF conversion tool v.' + VERSION
@@ -274,7 +271,7 @@ time[:] = nc_time
 station_name[:] = stringtoarr(station_id, nameDim.size)
 # Insere informacoes sobre a precipitacao
 nc_var = nc_file.get_variable('precipitation')
-nc_file.rootgrp.keywords = [nc_var.standard_name, nc_var.units]
+nc_file.rootgrp.keywords = [nc_var.standard_name, nc_var.units, station_id]
 nc_file.rootgrp.key_variables = 'precipitation'
 
 FILL_VALUE = nc_var._FillValue
@@ -329,10 +326,7 @@ print('Data length: {}'.format(data_len))
 
 #print('Resolucao: {}'.format(time_resolution_str))
 
-from cfchecker.cfchecks import main
-import sys
-
-# Checa se arquivo atende padrao CF
-print('')
+# Checa se arquivo atende padrao CF utilizando o cfchecks
+print('\nRunning cfchecks')
 sys.argv = ['', nc_file_path]
 sys.exit(main())

@@ -85,7 +85,7 @@ def convert_all(input_folder, output_folder, overwrite=False):
         # Tenta fazer a conversao
         if not error:
             for converter in CONVERTER_LIST:
-                output = subprocess.run([converter, '-i', input_file, '-o', output_file], stdout=subprocess.PIPE,
+                output = subprocess.run(['python', converter, '-i', input_file, '-o', output_file], stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT)
                 logger.debug('({}) {}'.format(os.path.basename(converter), output.stdout))
                 if output.returncode == 0:

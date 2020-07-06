@@ -16,7 +16,7 @@ def test_convert_batch_netcdf():
     """
 
 
-    cmd = ['python', FILE_PATH, '-i', INPUT_FOLDER, '-o', OUTPUT_FOLDER, '-ow']
+    cmd = ['python', FILE_PATH, INPUT_FOLDER, OUTPUT_FOLDER, '-ow']
     output = subprocess.run(cmd)
     if output.returncode != 0:
         # Processo retornou erro

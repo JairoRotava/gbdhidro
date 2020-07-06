@@ -27,7 +27,7 @@ def test_hobo_ua_003_64_convertion():
         #title, serial_number, header, extra = hobo.get_info(file)
         #table = hobo.get_data(file)
         #proc_extra = hobo.process_details(extra)
-        output = subprocess.run(['python', CONVERTER, '-i', file, '-d',OUTPUT_FOLDER])
+        output = subprocess.run(['python', CONVERTER, file, OUTPUT_FOLDER, '-ow'])
         if output.returncode != 0:
             # Processo retornou erro
             assert False

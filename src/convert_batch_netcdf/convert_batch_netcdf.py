@@ -85,8 +85,12 @@ def convert_all(input_folder, output_folder, overwrite=False):
         # Tenta fazer a conversao
         if not error:
             for converter in CONVERTER_LIST:
-                output = subprocess.run(['python', converter, '-i', input_file, '-o', output_file], stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT)
+                if overwrite:
+                    output = subprocess.run(['python', converter, input_file, output_file, '-ow'], stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT)
+                else:
+                    output = subprocess.run(['python', converter, input_file, output_file], stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT)
                 logger.debug('({}) {}'.format(os.path.basename(converter), output.stdout))
                 if output.returncode == 0:
                     message = '(converted by {}) '.format(os.path.basename(converter))
@@ -94,7 +98,7 @@ def convert_all(input_folder, output_folder, overwrite=False):
                     break
                 else:
                     error = True
-                    message = 'ERROR: converter not found'
+                    message = 'ERROR'
 
         # Checa se conversao teve sucesso
         if error:
@@ -122,13 +126,13 @@ def convert_all(input_folder, output_folder, overwrite=False):
 def get_commandline():
     # nao esta em debug. Pega informações da linha de comando
     parser = argparse.ArgumentParser(description='Conversion tool arguments:')
-    parser.add_argument("-i", "--input", help="hobo input files folder")
-    parser.add_argument("-o", "--output", help="output files folder")
+    parser.add_argument("input", type=str, help="hobo input files folder")
+    parser.add_argument("output", type=str, help="output files folder")
     parser.add_argument('-ow', '--overwrite', help='overwrite output files', action='store_true')
     args = parser.parse_args()
 
-    output_folder = args.output
-    input_folder = args.input
+    output_folder = os.path.realpath(args.output)
+    input_folder = os.path.realpath(args.input)
 
     overwrite = args.overwrite
 

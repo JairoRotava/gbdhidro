@@ -22,6 +22,7 @@ TOOL_NAME = 'HOBO Pendant Event Data Logger (UA-003-64) to NetCDF conversion too
 
 # Pega path absoluto deste arquivo
 here = os.path.abspath(os.path.dirname(__file__))
+cwd = os.getcwd()
 
 DEBUG = False
 FILE_PATH_DEBUG = './test/data/EHP02039.csv'
@@ -55,26 +56,44 @@ if DEBUG:
 else:
     # nao esta em debug. Pega informações da linha de comando
     parser = argparse.ArgumentParser(description='Conversion tool arguments:')
-    parser.add_argument("-i", "--input", help="hobo input file (.csv)")
-    parser.add_argument("-o", "--output", help="output file")
-    parser.add_argument("-d", "--directory", help="output directory")
+    parser.add_argument("input", type=str, help="hobo input file (.csv)")
+    parser.add_argument("output", type=str, help="output directory or file")
+    parser.add_argument('-ow', '--overwrite', help='overwrite output files', action='store_true')
     parser.add_argument("-c", "--config", help="stations config file (.csv)")
     parser.add_argument("-n", "--netcdf", help="json file with NetCDF file information")
     args = parser.parse_args()
 
+    # output indica arquivo de saida ou diretorio de saida
+    # Se output for diretorio que existe, salva com o mesmo nome
+    # Se não for diretorio, considera que a ultima parte é o nome
+    # do arquivo, e o restante é diretorio.
+    # Em linux não pode ter um diretorio e um arquivo com mesmo nome
+
+    FILE_PATH = os.path.realpath(args.input)
+
+    OUTPUT_FILE = os.path.realpath(args.output)
+    # Caso path de saida for diretorio utiliza o nome do arquivo de entrada
+    # Caso contrario utiliza nome fornecido pela linha de comando
+    if os.path.isdir(OUTPUT_FILE):
+        FILENAME = os.path.splitext(os.path.basename(FILE_PATH))[0] + '.nc'
+        OUTPUT_FILE = os.path.join(OUTPUT_FILE, FILENAME)
+
+    # Verifica se arquivo ja existe e gera erro caso flag de overwrite
+    # nao esteja setada
+    if not args.overwrite:
+        if os.path.exists(OUTPUT_FILE):
+            print('ERROR: file already exist. Use -ow flag to overwrite')
+            exit(ERROR_CODE)
+
+
     if args.netcdf:
-        JSON_FILE = args.netcdf
+        JSON_FILE = os.path.realpath(args.netcdf)
     if args.config:
-        CONFIG_FILE = args.config
-    if args.directory:
-        OUTPUT_FOLDER = args.directory
-    if args.output:
-        OUTPUT_FILE = args.output
-    if args.input:
-        FILE_PATH = args.input
-    else:
-        parser.print_help()
-        exit(ERROR_CODE)
+        CONFIG_FILE = os.path.realpath(args.config)
+#    if args.directory:
+#        OUTPUT_FOLDER = args.directory
+#    if args.output:
+#        OUTPUT_FILE = args.output
 
 # Abre arquivo e extrai informacoes
 title, serial_number, header, details = hobo.get_info(FILE_PATH)

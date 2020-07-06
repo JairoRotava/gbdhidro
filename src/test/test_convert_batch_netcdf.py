@@ -7,6 +7,8 @@ from gbdhidro.hobo import hobo
 here = os.path.abspath(os.path.dirname(__file__))
 INPUT_FOLDER = os.path.join(here, './station_sample_files')
 OUTPUT_FOLDER = os.path.join(here, './output/convert_batch_netcdf')
+# Cria diretorio de saida
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 FILE_PATH = os.path.join(here, '../convert_batch_netcdf/convert_batch_netcdf.py')
 
 

@@ -120,6 +120,7 @@ station_longitude = row.iloc[0]['Longitude [graus]']
 station_altitude = row.iloc[0]['Altitude [m]']
 station_datetime_col = row.iloc[0]['Coluna data/hora']
 station_gmt = int(row.iloc[0]['GMT'])
+station_uuid = row.iloc[0]['UUID']
 #station_time_resolution = row.iloc[0]['Intervalo medidas (ISO8601)']
 station_variable_col = row.iloc[0]['Coluna variavel']
 # Encontra coluna datetime de formar flexivel (procura por nome parecido)
@@ -330,7 +331,8 @@ nc_file.rootgrp.time_coverage_start = min_time_str
 nc_file.rootgrp.time_coverage_end = max_time_str
 nc_file.rootgrp.time_coverage_duration = time_delta_str
 #nc_file.rootgrp.time_coverage_resolution = time_resolution_str
-nc_file.rootgrp.id = file_name
+uuid = '{}/{}_{}_{}.nc'.format(station_uuid, station_id, first_day_str, last_day_str)
+nc_file.rootgrp.database_uuid = uuid
 nc_file.rootgrp.date_created = utilcf.datetime2str(datetime.now(timezone.utc))
 nc_file.rootgrp.history = '({}) Created with {}'.format(nc_file.rootgrp.date_created, TOOL_NAME)
 nc_file.close()

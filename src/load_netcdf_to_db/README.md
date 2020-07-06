@@ -1,0 +1,1 @@
+Carrega arquivos NetCDF para banco de dados e gera metadados para indexar o arquivo

@@ -1,24 +1,4 @@
-import argparse
-import os
-import glob
-import subprocess
-import logging
-import sys
-import os
-
-DEBUG = True
-# Inicia logging
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.WARNING)
-
 # Converte os arquivos de entrada e salva no diretorio de saida mantendo a mesma estrutura de diretorio
-
-HERE = os.path.abspath(os.path.dirname(__file__))
-INPUT_FOLDER = os.path.realpath('../test/output/hobo_ua_003_64')
-OUTPUT_FOLDER = os.path.realpath('../test/output/load_netcdf_to_db/gdb')
-CONVERTER_LIST = [os.path.join(HERE, '../station_raw_to_netcdf/hobo_ua_003_64/hobo_ua_003_64_to_netcdf.py')]
-FILE_OVERWRITE = True
-ERROR_CODE = 1
 
 # Formato do diretorio de saida
 # O arquivo é salvo no caminho definido pelo atributo global database_uuid no NetCDF. Sem esse atributo o
@@ -52,17 +32,39 @@ ERROR_CODE = 1
 ##
 
 
+import argparse
+import os
+import glob
+import subprocess
+import logging
+import sys
+import os
+from netCDF4 import Dataset
+from shutil import copyfile
+import zipfile
+
+DEBUG = False
+HERE = os.path.abspath(os.path.dirname(__file__))
+INPUT_FOLDER = os.path.realpath('../test/output/hobo_ua_003_64')
+OUTPUT_FOLDER = os.path.realpath('../test/output/load_netcdf_to_db/database_root')
+CONVERTER_LIST = [os.path.join(HERE, '../station_raw_to_netcdf/hobo_ua_003_64/hobo_ua_003_64_to_netcdf.py')]
+FILE_OVERWRITE = False
+ERROR_CODE = 1
+LOG_FILE = 'upload.log'
+
+# Inicia logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.WARNING)
+
+
 def get_input_files(folder):
     """
     Retorna todos os .py encontrados no diretorio e subdirecotrios folder
     """
     return glob.glob(os.path.join(folder, '**/*.*'), recursive=True)
 
-from netCDF4 import Dataset
-from shutil import copyfile
-import zipfile
 
-def load_all(input_folder, output_folder, overwrite=False):
+def upload_to_db(input_folder, output_folder, overwrite=False):
     print('GDB-Hidro load  NetCDF to database V0.0.1')
     print('Input folder {}'.format(input_folder))
     print('Root database folder {}'.format(output_folder))
@@ -70,98 +72,52 @@ def load_all(input_folder, output_folder, overwrite=False):
     input_file_paths = get_input_files(input_folder)
     logger.debug('Input files: ', input_file_paths)
 
-    #relative_paths = [os.path.relpath(path, input_folder) for path in input_file_paths]
-    #output_file_paths = [os.path.splitext(os.path.join(output_folder, path))[0] + '.nc' for path in relative_paths]
-
-    for input_file in input_file_paths:
-        rootgrp = Dataset(input_file, 'r')
-
-        if not hasattr(rootgrp, 'database_uuid'):
-            print('ERROR: database_uuid global attribute not found')
-            rootgrp.close()
-            exit(ERROR_CODE)
-
-        dst_folder = os.path.join(out_folder, os.path.dirname(rootgrp.database_uuid))
-        dst_file = os.path.basename(rootgrp.database_uuid)
-        # Create folder is not exits
-        os.makedirs(dst_folder, exist_ok=True)
-        dst_file_path = os.path.join(dst_folder, dst_file)
-        # Verifica se arquivo ja existe
-        # Verifica se arquivo ja existe e gera erro caso flag de overwrite
-        # nao esteja setada
-
-        if not overwrite:
-            if os.path.exists(dst_file_path):
-                print('ERROR: file already exist. Use -ow flag to overwrite')
-                exit(ERROR_CODE)
-
-        # Se chegou aqui pode copiar o arquivo com o novo nome
-        print('Copiando {} -> {}'.format(input_file, dst_file_path))
-        # TODO: comprimir os arquivos antes de colocar no banco
-
-        with zipfile.ZipFile(dst_file_path + '.zip', "w", compression=zipfile.ZIP_DEFLATED) as zf:
-            zf.write(input_file, os.path.basename(input_file))
-        copyfile(input_file, dst_file_path)
-
-
-
-
-        rootgrp.close()
-
-    exit()
-
     succeed = []
     failed = []
-    for input_file, output_file in zip(input_file_paths, output_file_paths):
-        message = ''
-        error = False
+    for input_file in input_file_paths:
+        print('{} '.format(input_file), end='')
+        try:
+            rootgrp = Dataset(input_file, 'r')
 
-        # Passa arquivo por todos conversores disponiveis
-        print('{} '.format(os.path.basename(input_file)), end='')
+            if not hasattr(rootgrp, 'database_uuid'):
+                raise AttributeError('ERROR: database_uuid global attribute not found')
 
-        output_folder = os.path.dirname(output_file)
-        os.makedirs(output_folder, exist_ok=True)
-        # Checa se arquivo ja existe
-        if not overwrite:
-            if os.path.exists(output_file):
-                message = 'ERROR: file already exist'
-                error = True
+            dst_folder = os.path.join(out_folder, os.path.dirname(rootgrp.database_uuid))
+            dst_file = os.path.basename(rootgrp.database_uuid)
+            # Create folder if not exits
+            os.makedirs(dst_folder, exist_ok=True)
+            dst_file_path = os.path.join(dst_folder, dst_file + '.zip')
 
-        # Tenta fazer a conversao
-        if not error:
-            for converter in CONVERTER_LIST:
-                if overwrite:
-                    output = subprocess.run(['python', converter, input_file, output_file, '-ow'], stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT)
-                else:
-                    output = subprocess.run(['python', converter, input_file, output_file], stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT)
-                logger.debug('({}) {}'.format(os.path.basename(converter), output.stdout))
-                if output.returncode == 0:
-                    message = '(converted by {}) '.format(os.path.basename(converter))
-                    error = False
-                    break
-                else:
-                    error = True
-                    message = 'ERROR'
+            # Verifica se arquivo ja existe
+            if not overwrite:
+                if os.path.exists(dst_file_path):
+                    raise FileExistsError('ERROR: file already exist. Use -ow flag to overwrite')
 
-        # Checa se conversao teve sucesso
-        if error:
-            failed.append('{} {}'.format(input_file, message))
+            # Se chegou aqui pode copiar o arquivo com o novo nome
+            print(' -> {}'.format(dst_file_path))
+            # compresslevel: 0 - (no compress) 9 (max compress)
+            with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+                zf.write(input_file, os.path.basename(input_file))
+
+        except (AttributeError, FileExistsError) as error:
+            # Algum erro foi gerado
+            failed.append(input_file)
+            print(error)
         else:
-            succeed.append('{} {}'.format(input_file, message))
-        print(message)
+            # Nenhum erro gerado
+            succeed.append(input_file)
+        finally:
+            rootgrp.close()
 
     # Mostra arqvuios que não foram convertidos
-    print('\nTotal converted: {}'.format(len(succeed)))
+    print('\nTotal uploaded: {}'.format(len(succeed)))
     print('Total failed: {}'.format(len(failed)))
 
-    LOG_FILE = 'converter.log'
     with open(LOG_FILE, 'w') as fo:
-        fo.write('Succeed conversion:\n')
+        fo.write('Succeed upload:\n')
         for item in succeed:
             fo.write('{}\n'.format(item))
-        fo.write('\nFailed conversion:\n')
+        fo.write('\nFailed upload:\n')
         for item in failed:
             fo.write('{}\n'.format(item))
 
@@ -169,23 +125,17 @@ def load_all(input_folder, output_folder, overwrite=False):
 
 
 def get_commandline():
-    # nao esta em debug. Pega informações da linha de comando
     parser = argparse.ArgumentParser(description='Load NetCDF to GBD database')
-    parser.add_argument("input", type=str, help="input file")
+    parser.add_argument("input", type=str, help="input folder")
     parser.add_argument("output", type=str, help="root database folder")
     parser.add_argument('-ow', '--overwrite', help='overwrite output files', action='store_true')
     args = parser.parse_args()
 
     output_folder = os.path.realpath(args.output)
     input_folder = os.path.realpath(args.input)
+    overwrite_cmd = args.overwrite
 
-    overwrite = args.overwrite
-
-    if not output_folder or not input_folder:
-        parser.print_help()
-        exit(ERROR_CODE)
-
-    return input_folder, output_folder, overwrite
+    return input_folder, output_folder, overwrite_cmd
 
 
 # Chamado da linha de comando
@@ -197,4 +147,5 @@ if __name__ == "__main__":
         overwrite = FILE_OVERWRITE
     else:
         in_folder, out_folder, overwrite = get_commandline()
-    load_all(in_folder, out_folder, overwrite)
+
+    upload_to_db(in_folder, out_folder, overwrite)

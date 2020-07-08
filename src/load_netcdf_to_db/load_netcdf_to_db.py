@@ -42,15 +42,22 @@ import os
 from netCDF4 import Dataset
 from shutil import copyfile
 import zipfile
+from pymongo import MongoClient
+from gbdhidro import utilcf
+import numpy
 
-DEBUG = False
+DEBUG = True
 HERE = os.path.abspath(os.path.dirname(__file__))
 INPUT_FOLDER = os.path.realpath('../test/output/hobo_ua_003_64')
 OUTPUT_FOLDER = os.path.realpath('../test/output/load_netcdf_to_db/database_root')
 CONVERTER_LIST = [os.path.join(HERE, '../station_raw_to_netcdf/hobo_ua_003_64/hobo_ua_003_64_to_netcdf.py')]
-FILE_OVERWRITE = False
+FILE_OVERWRITE = True
 ERROR_CODE = 1
 LOG_FILE = 'upload.log'
+# Mongodb info
+MONGODB_URL = '127.0.0.1:27017'
+DATABASE = 'gbdhidro'
+COLLECTION = 'index'
 
 # Inicia logging
 logger = logging.getLogger(__name__)
@@ -62,6 +69,41 @@ def get_input_files(folder):
     Retorna todos os .py encontrados no diretorio e subdirecotrios folder
     """
     return glob.glob(os.path.join(folder, '**/*.*'), recursive=True)
+
+
+def insert_entry_db(entry):
+    client = MongoClient(MONGODB_URL)
+    gbd=client[DATABASE]
+    index = gbd[COLLECTION]
+    index.insert_one(entry)
+    client.close()
+
+
+# Converte os atribuito globais do NetCDF para formatos mais adequados do MongoDB
+def convert_netcdf_attributes_to_mongo(dataset):
+    attributes = dataset.__dict__.copy()
+    d = {}
+    for key, value in attributes.items():
+        # Convert numpy type to native python
+        if type(value).__module__ == numpy.__name__:
+            value = value.item()
+        # Convert time converage start/end to native mongodb
+        if key == 'time_coverage_start':
+            # value = datetime.datetime.strptime(value, '%Y%m%dT%H%M%SZ')
+            value = utilcf.iso8601_to_datetime(value)
+        if key == 'time_coverage_end':
+            value = utilcf.iso8601_to_datetime(value)
+        if key == 'time_coverage_duration':
+            # Nao tem tipo de intervalo de tempo definido no mongodb. Guardar o intervalor em segundos
+            # Calcula a partir da data de incio e fim pois e mais facil dq converter valor inserido
+            # no netcdf. Nao sei direito com lidar com isso ainda
+            start = utilcf.iso8601_to_datetime(attributes['time_coverage_start'])
+            end = utilcf.iso8601_to_datetime(attributes['time_coverage_end'])
+            interval = (end - start).total_seconds()
+            value = int(interval)
+
+        d.update({key: value})
+    return d
 
 
 def upload_to_db(input_folder, output_folder, overwrite=False):
@@ -82,6 +124,11 @@ def upload_to_db(input_folder, output_folder, overwrite=False):
             if not hasattr(rootgrp, 'database_uuid'):
                 raise AttributeError('ERROR: database_uuid global attribute not found')
 
+            try:
+                metadata = convert_netcdf_attributes_to_mongo(rootgrp)
+            except:
+                raise AttributeError('ERROR: converting NetCDF metadata')
+
             dst_folder = os.path.join(out_folder, os.path.dirname(rootgrp.database_uuid))
             dst_file = os.path.basename(rootgrp.database_uuid)
             # Create folder if not exits
@@ -98,6 +145,9 @@ def upload_to_db(input_folder, output_folder, overwrite=False):
             # compresslevel: 0 - (no compress) 9 (max compress)
             with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
                 zf.write(input_file, os.path.basename(input_file))
+
+            # Adiciona no index
+            insert_entry_db(metadata)
 
         except (AttributeError, FileExistsError) as error:
             # Algum erro foi gerado

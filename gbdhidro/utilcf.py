@@ -12,6 +12,10 @@ def datetime2str(date_time):
     return date_time.strftime('%Y%m%dT%H%M%SZ')
 
 
+def iso8601_to_datetime(str):
+    return datetime.strptime(str, '%Y%m%dT%H%M%SZ')
+
+
 def timedelta2str(value):
     """
     Converte timedelta para string no format iso8601

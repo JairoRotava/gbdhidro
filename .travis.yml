@@ -1,9 +1,13 @@
 language: python
 python:
-    - "3.6"
+  - "3.6"
+services: :
+  - mongodb
 before_install:
   - sudo apt-get -y install udunits-bin
+  - sleep 15
+  - mongo mydb_test --eval 'db.createUser({user:"travis",pwd:"test",roles:["readWrite"]});'
 install:
-    - pip install .
+  - pip install .
 script:
-    - pytest
+  - pytest

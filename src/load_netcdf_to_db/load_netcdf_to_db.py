@@ -46,7 +46,7 @@ from pymongo import MongoClient
 from gbdhidro import utilcf
 import numpy
 
-DEBUG = True
+DEBUG = False
 HERE = os.path.abspath(os.path.dirname(__file__))
 INPUT_FOLDER = os.path.realpath('../test/output/hobo_ua_003_64')
 OUTPUT_FOLDER = os.path.realpath('../test/output/load_netcdf_to_db/database_root')
@@ -62,6 +62,8 @@ COLLECTION = 'index'
 # Inicia logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
+
+#TODO: precisa verificar como fazer quando o arquivo é sobreescrito, e como atualizar isso no index
 
 
 def get_input_files(folder):

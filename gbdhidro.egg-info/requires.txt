@@ -1,4 +1,10 @@
 netCDF4
+pandas
+numpy
+python-dateutil
+cfchecker
+cfunits
+pymongo
 
 [testing]
 pytest

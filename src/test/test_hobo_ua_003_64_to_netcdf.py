@@ -5,7 +5,7 @@ import subprocess
 from gbdhidro.hobo import hobo
 
 here = os.path.abspath(os.path.dirname(__file__))
-DATA_FOLDER = os.path.join(here, './station_sample_files/hobo_ua_003_64')  # Diretorio com arquivos de entrada para teste
+DATA_FOLDER = os.path.join(here, './station_sample_files/raw/hobo_ua_003_64')  # Diretorio com arquivos de entrada para teste
 OUTPUT_FOLDER = os.path.join(here, './output/hobo_ua_003_64')  # Diretorio para salvar arquivos de saida
 # Cria diretorio de saida
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)

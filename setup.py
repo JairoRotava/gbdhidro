@@ -45,7 +45,7 @@ setup(
       install_requires=['netCDF4', 'pandas', 'numpy', 'python-dateutil', 'cfchecker', 'cfunits', 'pymongo'],
       tests_requires=['pytest'],
       cmdclass={'test': PyTest},
-      long_description='descrcicao longa',
+      long_description='descricao longa',
       include_package_data=True,
       platforms='ahy',
       test_suite='gbdhidro.test.test_gbdhidro',
@@ -53,4 +53,9 @@ setup(
             'testing': ['pytest'],
       },
       packages=['gbdhidro', 'gbdhidro.hobo'],
+      entry_points={
+          'console_scripts': [
+              'myscript2=gbdhidro.myscript:run'
+          ]
+      },
       zip_safe=False)

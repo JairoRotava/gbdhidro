@@ -4,12 +4,16 @@ MANIFEST.in
 README.md
 setup.py
 gbdhidro/__init__.py
+gbdhidro/myscript.py
 gbdhidro/netcdfjson.py
 gbdhidro/utilcf.py
 gbdhidro/utilconversor.py
 gbdhidro.egg-info/PKG-INFO
 gbdhidro.egg-info/SOURCES.txt
 gbdhidro.egg-info/dependency_links.txt
+gbdhidro.egg-info/entry_points.txt
 gbdhidro.egg-info/not-zip-safe
 gbdhidro.egg-info/requires.txt
 gbdhidro.egg-info/top_level.txt
+gbdhidro/hobo/__init__.py
+gbdhidro/hobo/hobo.py

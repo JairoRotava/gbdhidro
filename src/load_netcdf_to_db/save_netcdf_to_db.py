@@ -63,7 +63,8 @@ COLLECTION = 'index'
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
 
-#TODO: precisa verificar como fazer quando o arquivo é sobreescrito, e como atualizar isso no index
+
+# TODO: precisa verificar como fazer quando o arquivo é sobreescrito, e como atualizar isso no index
 
 
 def get_input_files(folder):
@@ -75,7 +76,7 @@ def get_input_files(folder):
 
 def insert_entry_db(entry):
     client = MongoClient(MONGODB_URL)
-    gbd=client[DATABASE]
+    gbd = client[DATABASE]
     index = gbd[COLLECTION]
     index.insert_one(entry)
     client.close()
@@ -108,7 +109,7 @@ def convert_netcdf_attributes_to_mongo(dataset):
     return d
 
 
-def upload_to_db(input_folder, output_folder, overwrite=False):
+def save_to_db(input_folder, output_folder, overwrite=False):
     print('GDB-Hidro load  NetCDF to database V0.0.1')
     print('Input folder {}'.format(input_folder))
     print('Root database folder {}'.format(output_folder))
@@ -200,4 +201,4 @@ if __name__ == "__main__":
     else:
         in_folder, out_folder, overwrite = get_commandline()
 
-    upload_to_db(in_folder, out_folder, overwrite)
+    save_to_db(in_folder, out_folder, overwrite)

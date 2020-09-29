@@ -96,3 +96,4 @@ Também é necessário instalar o MongoDB. Verificar instruções para instalaç
 - Reorganizar codigo
 - Fazer exemplo
 - Documentar
+- Teste Travis

@@ -24,6 +24,7 @@ def test_files():
 
     # Tenta abrir todos arquivos para ver se da algum erro
     for file in files:
+        print('Opening: {}'.format(file))
         title, serial_number, header, extra = hobo.get_info(file)
         table = hobo.get_data(file)
         proc_extra = hobo.process_details(extra)

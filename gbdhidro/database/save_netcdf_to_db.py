@@ -146,7 +146,9 @@ def save_to_db(input_folder, output_folder, overwrite=False):
             # Se chegou aqui pode copiar o arquivo com o novo nome
             print(' -> {}'.format(dst_file_path))
             # compresslevel: 0 - (no compress) 9 (max compress)
-            with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+            # with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+            #compress level nao existe em python 3.6
+            with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
                 zf.write(input_file, os.path.basename(input_file))
 
             # Adiciona no index

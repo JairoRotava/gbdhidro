@@ -48,11 +48,10 @@ setup(
       long_description='descricao longa',
       include_package_data=True,
       platforms='ahy',
-      test_suite='gbdhidro.test.test_gbdhidro',
       extras_require={
             'testing': ['pytest'],
       },
-      packages=['gbdhidro', 'gbdhidro.hobo'],
+      packages=['gbdhidro', 'gbdhidro.hobo', 'gbdhidro.netcdf', 'gbdhidro.database'],
       entry_points={
           'console_scripts': [
               'myscript2=gbdhidro.myscript:run'

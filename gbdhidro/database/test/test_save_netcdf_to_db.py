@@ -8,7 +8,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 INPUT_FOLDER = os.path.realpath(os.path.join(here, './station_files'))
 OUTPUT_FOLDER = os.path.realpath(os.path.join(here, './output/database_root'))
-# Cria diretorio de saida
+# Cria diretorio de saida b 
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 FILE_PATH = os.path.realpath(os.path.join(here, '../save_netcdf_to_db.py'))
 

@@ -31,14 +31,14 @@ def test_hobo_ua_003_64_convertion():
         #title, serial_number, header, extra = hobo.get_info(file)
         #table = hobo.get_data(file)
         #proc_extra = hobo.process_details(extra)
-        output = subprocess.run(['python', CONVERTER, file, OUTPUT_FOLDER, '-ow'])
+        cmd = ['python', CONVERTER, file, OUTPUT_FOLDER, '-ow']
+        print('\nComando teste -> ' + ' '.join(cmd))
+        output = subprocess.run(cmd)
+        print(output.stdout)
         if output.returncode != 0:
-            # Processo retornou erro
             assert False
-
-
-    # Foi tudo ok. Lanca um True - não precisa...just in case.
-    assert True
+        else:
+            assert True
 
 
 

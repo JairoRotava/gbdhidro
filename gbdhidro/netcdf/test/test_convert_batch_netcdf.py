@@ -17,16 +17,15 @@ def test_convert_batch_netcdf():
     Faz um teste de conversao dos arquivo hobo. Se der algum pau ele gera um erro
     """
 
-
     cmd = ['python', FILE_PATH, INPUT_FOLDER, OUTPUT_FOLDER, '-ow']
+    print('\nComando teste -> ' + ' '.join(cmd))
     output = subprocess.run(cmd)
+    print(output.stdout)
     if output.returncode != 0:
         # Processo retornou erro
         assert False
-
-
-    # Foi tudo ok. Lanca um True - não precisa...just in case.
-    assert True
+    else:
+        assert True
 
 
 

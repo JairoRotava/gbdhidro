@@ -91,3 +91,8 @@ Os pacotes python utilizados por esse projeto são:
 
 O pacote cfunits precisa est biblioteca instalada para funcionar (ubuntu): ```sudo apt-get -y install udunits-bin```
 Também é necessário instalar o MongoDB. Verificar instruções para instalação do MongoDB na internet.
+
+## TODO
+- Reorganizar codigo
+- Fazer exemplo
+- Documentar

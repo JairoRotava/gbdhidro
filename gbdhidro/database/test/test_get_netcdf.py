@@ -7,7 +7,7 @@ from gbdhidro.hobo import hobo
 here = os.path.abspath(os.path.dirname(__file__))
 
 UUID = 'gbdhidro/estacoes/eh-p05/EH-P05_20200226T190000Z_20200508T151000Z.nc'
-DB_FOLDER = os.path.realpath(os.path.join(here, './output/database_root'))
+DB_FOLDER = os.path.realpath(os.path.join(here, './database'))
 DST_FOLDER = os.path.realpath(os.path.join(here, './output/get_netcdf'))
 # Cria diretorio de saida
 os.makedirs(DST_FOLDER, exist_ok=True)

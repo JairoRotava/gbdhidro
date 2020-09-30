@@ -1,8 +1,8 @@
 # TODO
+- Testar com exemplos de documentar
+- Verificar README.md dos sub pacotes e corrigir.
 - Organizar docs
-- Fazer teste das rotinas
 - Verificar como fazer os docs
-- e muitas outras coisas
 
 
 ## Problemas que precisam ser resolvidos:

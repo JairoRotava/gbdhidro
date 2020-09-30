@@ -48,7 +48,7 @@ import numpy
 
 DEBUG = False
 HERE = os.path.abspath(os.path.dirname(__file__))
-INPUT_FOLDER = os.path.realpath('../test/output/hobo_ua_003_64')
+INPUT_FOLDER = os.path.realpath('./test/output/hobo_ua_003_64')
 OUTPUT_FOLDER = os.path.realpath('../test/output/load_netcdf_to_db/database_root')
 CONVERTER_LIST = [os.path.join(HERE, '../station_raw_to_netcdf/hobo_ua_003_64/hobo_ua_003_64_to_netcdf.py')]
 FILE_OVERWRITE = True
@@ -132,7 +132,7 @@ def save_to_db(input_folder, output_folder, overwrite=False):
             except:
                 raise AttributeError('ERROR: converting NetCDF metadata')
 
-            dst_folder = os.path.join(out_folder, os.path.dirname(rootgrp.database_uuid))
+            dst_folder = os.path.join(output_folder, os.path.dirname(rootgrp.database_uuid))
             dst_file = os.path.basename(rootgrp.database_uuid)
             # Create folder if not exits
             os.makedirs(dst_folder, exist_ok=True)
@@ -179,18 +179,18 @@ def save_to_db(input_folder, output_folder, overwrite=False):
     print('Check file {} for more details'.format(LOG_FILE))
 
 
-def get_commandline():
+def command_line():
     parser = argparse.ArgumentParser(description='Load NetCDF to GBD database')
     parser.add_argument("input", type=str, help="input folder")
     parser.add_argument("output", type=str, help="root database folder")
     parser.add_argument('-ow', '--overwrite', help='overwrite output files', action='store_true')
     args = parser.parse_args()
 
-    output_folder = os.path.realpath(args.output)
-    input_folder = os.path.realpath(args.input)
-    overwrite_cmd = args.overwrite
+    out_folder = os.path.realpath(args.output)
+    in_folder = os.path.realpath(args.input)
+    overwrite = args.overwrite
 
-    return input_folder, output_folder, overwrite_cmd
+    save_to_db(in_folder, out_folder, overwrite)
 
 
 # Chamado da linha de comando
@@ -200,7 +200,6 @@ if __name__ == "__main__":
         in_folder = os.path.realpath(INPUT_FOLDER)
         out_folder = os.path.realpath(OUTPUT_FOLDER)
         overwrite = FILE_OVERWRITE
+        save_to_db(in_folder, out_folder, overwrite)
     else:
-        in_folder, out_folder, overwrite = get_commandline()
-
-    save_to_db(in_folder, out_folder, overwrite)
+        command_line()

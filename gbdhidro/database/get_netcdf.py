@@ -43,7 +43,7 @@ def get_from_db(uuid, db_folder, dst_folder, overwrite=False):
     shutil.copyfile(src_file, dst_file)
 
 
-def get_commandline():
+def command_line():
     """
     Captura dados de linhas de comando
     """
@@ -54,12 +54,12 @@ def get_commandline():
     parser.add_argument('-ow', '--overwrite', help='overwrite output file', action='store_true')
     args = parser.parse_args()
 
-    db_folder = os.path.realpath(args.db)
-    dst_folder = os.path.realpath(args.dst)
+    db = os.path.realpath(args.db)
+    dst = os.path.realpath(args.dst)
     uuid = args.uuid
-    overwrite = args.overwrite
+    ow = args.overwrite
 
-    return uuid, db_folder, dst_folder, overwrite
+    get_from_db(uuid, db, dst, ow)
 
 
 # Chamado da linha de comando
@@ -70,7 +70,6 @@ if __name__ == "__main__":
         db_folder = DEBUG_DB_FOLDER
         dst_folder = DEBUG_DST_FOLDER
         overwrite = DEBUG_OVERWRITE
+        get_from_db(uuid, db_folder, dst_folder, overwrite)
     else:
-        uuid, db_folder, dst_folder, overwrite = get_commandline()
-
-    get_from_db(uuid, db_folder, dst_folder, overwrite)
+        command_line()

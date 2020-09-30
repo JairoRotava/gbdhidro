@@ -54,7 +54,9 @@ setup(
       packages=['gbdhidro', 'gbdhidro.hobo', 'gbdhidro.netcdf', 'gbdhidro.database'],
       entry_points={
           'console_scripts': [
-              'myscript2=gbdhidro.myscript:run'
+              'gbd_getuuid=gbdhidro.database.get_netcdf:command_line',
+              'gbd_loadnetcdf=gbdhidro.database.save_netcdf_to_db:command_line',
+              'gbd_hobo2netcdf=gbdhidro.netcdf.station_raw_to_netcdf.hobo_ua_003_64.hobo_ua_003_64_to_netcdf:command_line',
           ]
       },
       zip_safe=False)

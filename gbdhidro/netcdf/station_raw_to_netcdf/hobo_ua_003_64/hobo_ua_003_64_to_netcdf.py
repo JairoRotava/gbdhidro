@@ -80,7 +80,12 @@ def hobo_to_netcdf(input_file, output, config_file=None, json_file=None, overwri
 
 
     # Le arquivo .csv com configuracoes e informacoes adicionais das estacoes
+
+    if os.path.exists(config_file) is False:
+        raise FileNotFoundError('Config file not found {}'.format(config_file))
+
     cfgs = pd.read_csv(config_file)
+
     row = cfgs.loc[cfgs['Plot Title'] == title]    # Procura por plot tittle igual do arquivo de entrada
     if row.empty:
         # Erro - nao tem nenhuma informacao sobre esse titulo de plot
@@ -221,8 +226,12 @@ def hobo_to_netcdf(input_file, output, config_file=None, json_file=None, overwri
     # Cria arquivo netCDF
     nc_file = NetCDFJSON()
     nc_file.write(nc_input_file)
+
     # Le arquivo json com configuracao da estrutura do netcdf
-    nc_file.load_json(JSON_FILE)
+    if os.path.exists(json_file) is False:
+        raise FileNotFoundError('NetCDF json file not found {}'.format(json_file))
+
+    nc_file.load_json(json_file)
     nc_file.create_from_json()
 
     # pega handlers para dimensoes
@@ -335,6 +344,9 @@ def command_line():
     Funcao para interpretacao de linha de comando
     :return:
     """
+
+    #logger.setLevel(logging.DEBUG)
+
     parser = argparse.ArgumentParser(description=TOOL_NAME)
     parser.add_argument("input", type=str, help="hobo input file (.csv)", nargs='+')
     parser.add_argument('-o', '--output', type=str, help="output directory or file")
@@ -365,10 +377,14 @@ def command_line():
 
     # loop para processar todos arquivos
     input_files = args.input
+    logger.debug('Input files: {}'.format(input_files))
     for input_file in input_files:
         input_file = os.path.realpath(input_file)
-        hobo_to_netcdf(input_file, output,
-                       config_file=config_file, json_file=json_file, overwrite=ow)
+        if os.path.isfile(input_file):
+            hobo_to_netcdf(input_file, output,
+                           config_file=config_file, json_file=json_file, overwrite=ow)
+        else:
+            continue
 
 
 # Chamado da linha de comando

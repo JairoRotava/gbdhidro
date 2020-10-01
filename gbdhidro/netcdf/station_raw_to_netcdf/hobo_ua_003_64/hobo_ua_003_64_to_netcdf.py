@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 # Carrega bibliotecas de acordo com o necessario
@@ -17,6 +16,11 @@ from cfchecker.cfchecks import main
 import sys
 import logging
 
+# Versao
+__version_info__ = (0, 1, 0)
+__version__ = '.'.join(map(str,__version_info__))
+TOOL_NAME = 'HOBO Pendant Event Data Logger (UA-003-64) to NetCDF conversion tool v.' + __version__
+
 HERE = os.path.abspath(os.path.dirname(__file__))
 #cwd = os.getcwd()
 
@@ -34,16 +38,22 @@ SEPARATOR = ','
 ENCODING = 'utf-8'
 RUN_CFCHECKS = False
 
-# Codigo de erro utilizado no shell em caso de problema
-VERSION = '0.0.1'
-TOOL_NAME = 'HOBO Pendant Event Data Logger (UA-003-64) to NetCDF conversion tool v.' + VERSION
-
 # Inicia logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
 
 
 def hobo_to_netcdf(input_file, output, config_file=None, json_file=None, overwrite=False):
+    """
+    Converte arquivos hobo (convertidos para csv) para formato netcdf
+
+    :param input_file:
+    :param output:
+    :param config_file:
+    :param json_file:
+    :param overwrite:
+    :return:
+    """
 
     logger.debug('Input file: {}'.format(input_file))
     logger.debug('Output: {}'.format(output))
@@ -321,17 +331,24 @@ def hobo_to_netcdf(input_file, output, config_file=None, json_file=None, overwri
 
 
 def command_line():
-    # nao esta em debug. Pega informações da linha de comando
+    """
+    Funcao para interpretacao de linha de comando
+    :return:
+    """
     parser = argparse.ArgumentParser(description=TOOL_NAME)
-    parser.add_argument("input", type=str, help="hobo input file (.csv)")
-    parser.add_argument("output", type=str, help="output directory or file")
+    parser.add_argument("input", type=str, help="hobo input file (.csv)", nargs='+')
+    parser.add_argument('-o', '--output', type=str, help="output directory or file")
     parser.add_argument('-ow', '--overwrite', help='overwrite output files', action='store_true')
     parser.add_argument("-c", "--config", help="stations config file (.csv)")
     parser.add_argument("-n", "--netcdf", help="json file with NetCDF file information")
+
     args = parser.parse_args()
 
-    input_file = os.path.realpath(args.input)
-    output = os.path.realpath(args.output)
+    if args.output is None:
+        output = os.path.realpath('.')
+    else:
+        output = os.path.realpath(args.output)
+
     ow = args.overwrite
 
     # arquivo definido pelo usuario ou padrao
@@ -346,8 +363,12 @@ def command_line():
     else:
         config_file = CONFIG_FILE
 
-    hobo_to_netcdf(input_file, output,
-                   config_file=config_file, json_file=json_file, overwrite=ow)
+    # loop para processar todos arquivos
+    input_files = args.input
+    for input_file in input_files:
+        input_file = os.path.realpath(input_file)
+        hobo_to_netcdf(input_file, output,
+                       config_file=config_file, json_file=json_file, overwrite=ow)
 
 
 # Chamado da linha de comando

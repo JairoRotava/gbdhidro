@@ -6,17 +6,22 @@ import logging
 import sys
 import os
 
+# TODO: isso aqui ainda nao esta bom. Os conversores são ligados por codigo interno oque não deixa a solução
+# flexivel. Tentar fazer um conversor onde vc fornce as ferramentas de conversao e ele tenta aplicar automaitcamente
+# e mantem a estrutura de saida de diretorio
+
 # Inicia logging
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.WARNING)
+#logging.basicConfig(level=logging.DEBUG)
 
 # Converte os arquivos de entrada e salva no diretorio de saida mantendo a mesma estrutura de diretorio
 
 HERE = os.path.abspath(os.path.dirname(__file__))
-INPUT_FOLDER = '../station_raw_to_netcdf/input'
-OUTPUT_FOLDER = './converted'
-CONVERTER_LIST = [os.path.join(HERE, './station_raw_to_netcdf/hobo_ua_003_64/hobo_ua_003_64_to_netcdf.py')]
-FILE_OVERWRITE = True
+DEBUG = False
+DEBUG_INPUT_FOLDER = os.path.realpath('./test/station_files')
+DEBUG_OUTPUT_FOLDER = os.path.realpath('./test/output/convert_batch_netcdf')
+CONVERTER_LIST = [os.path.realpath(os.path.join(HERE, './station_raw_to_netcdf/hobo_ua_003_64/hobo_ua_003_64_to_netcdf.py'))]
+DEBUG_FILE_OVERWRITE = True
 ERROR_CODE = 1
 
 # Formato do diretorio de saida
@@ -58,7 +63,8 @@ def get_input_files(folder):
 
 def convert_all(input_folder, output_folder, overwrite=False):
     input_file_paths = get_input_files(input_folder)
-    logger.debug('Input files: ', input_file_paths)
+    logger.debug('Input folder: '.format(input_folder))
+    logger.debug('Input files: '.format(input_file_paths))
     relative_paths = [os.path.relpath(path, input_folder) for path in input_file_paths]
     output_file_paths = [os.path.splitext(os.path.join(output_folder, path))[0] + '.nc' for path in relative_paths]
 
@@ -76,6 +82,7 @@ def convert_all(input_folder, output_folder, overwrite=False):
         print('{} '.format(os.path.basename(input_file)), end='')
 
         output_folder = os.path.dirname(output_file)
+        # cria diretorio de saida
         os.makedirs(output_folder, exist_ok=True)
         # Checa se arquivo ja existe
         if not overwrite:
@@ -87,10 +94,11 @@ def convert_all(input_folder, output_folder, overwrite=False):
         if not error:
             for converter in CONVERTER_LIST:
                 if overwrite:
-                    output = subprocess.run(['python', converter, input_file, output_file, '-ow'], stdout=subprocess.PIPE,
+                    cmd = ['python', converter, input_file, '-o', output_file, '-ow']
+                    output = subprocess.run(cmd , stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
                 else:
-                    output = subprocess.run(['python', converter, input_file, output_file], stdout=subprocess.PIPE,
+                    output = subprocess.run(['python', converter, input_file, '-o', output_file], stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
                 logger.debug('({}) {}'.format(os.path.basename(converter), output.stdout))
                 if output.returncode == 0:
@@ -124,7 +132,7 @@ def convert_all(input_folder, output_folder, overwrite=False):
     print('Check file {} for more details'.format(LOG_FILE))
 
 
-def get_commandline():
+def command_line():
     # nao esta em debug. Pega informações da linha de comando
     parser = argparse.ArgumentParser(description='Conversion tool arguments:')
     parser.add_argument("input", type=str, help="hobo input files folder")
@@ -141,10 +149,17 @@ def get_commandline():
         parser.print_help()
         exit(ERROR_CODE)
 
-    return input_folder, output_folder, overwrite
+    convert_all(input_folder, output_folder, overwrite)
+
+#    return input_folder, output_folder, overwrite
 
 
 # Chamado da linha de comando
 if __name__ == "__main__":
-    in_folder, out_folder, overwrite = get_commandline()
-    convert_all(in_folder, out_folder, overwrite)
+    if DEBUG:
+        #in_folder, out_folder, overwrite = get_commandline()
+        convert_all(DEBUG_INPUT_FOLDER, DEBUG_OUTPUT_FOLDER, DEBUG_FILE_OVERWRITE)
+    else:
+        command_line()
+        #in_folder, out_folder, overwrite = get_commandline()
+        #convert_all(in_folder, out_folder, overwrite)

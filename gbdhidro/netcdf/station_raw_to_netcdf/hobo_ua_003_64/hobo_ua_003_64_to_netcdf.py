@@ -65,6 +65,8 @@ def hobo_to_netcdf(input_file, output, config_file=None, json_file=None, overwri
     if os.path.isdir(output):
         file_name = os.path.splitext(os.path.basename(input_file))[0] + '.nc'
         output_file = os.path.join(output, file_name)
+    else:
+        output_file = output
 
     # Verifica se arquivo ja existe e gera erro caso flag de overwrite nao for setado
     if os.path.exists(output_file) and overwrite is False:
@@ -380,11 +382,11 @@ def command_line():
     logger.debug('Input files: {}'.format(input_files))
     for input_file in input_files:
         input_file = os.path.realpath(input_file)
-        if os.path.isfile(input_file):
+        if os.path.isdir(input_file):
+            continue
+        else:
             hobo_to_netcdf(input_file, output,
                            config_file=config_file, json_file=json_file, overwrite=ow)
-        else:
-            continue
 
 
 # Chamado da linha de comando

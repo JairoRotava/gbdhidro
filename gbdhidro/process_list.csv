@@ -1,0 +1,6 @@
+# Arquivo com configuracao dos processos a serem aplicados nos arquivos
+# Utilize # para comentario
+  # {file_name} é substituido automaticamente pelo nome do arquivo
+# {output_folder} é substituido automaticamente pelo diretorio de saida
+"python", "/media/jairo/Dados/Jairo/Projetos/Samuel data/git/GBD-Hidro/gbdhidro/netcdf/station_raw_to_netcdf/hobo_ua_003_64/hobo_ua_003_64_to_netcdf.py", "{file_name}" , "-o","{output_folder}","-ow"
+"python", "/media/jairo/Dados/Jairo/Projetos/Samuel data/git/GBD-Hidro/gbdhidro/netcdf/station_raw_to_netcdf/hobo_ua_003_64/hobo_ua_003_64_to_netcdf.py", "{file_name}" , "-o","{output_folder}","-ow"

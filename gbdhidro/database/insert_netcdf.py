@@ -67,11 +67,11 @@ logging.basicConfig(level=logging.WARNING)
 # TODO: precisa verificar como fazer quando o arquivo é sobreescrito, e como atualizar isso no index
 
 
-def get_input_files(folder):
-    """
-    Retorna todos os .py encontrados no diretorio e subdirecotrios folder
-    """
-    return glob.glob(os.path.join(folder, '**/*.*'), recursive=True)
+#def get_input_files(folder):
+#    """
+#    Retorna todos os .py encontrados no diretorio e subdirecotrios folder
+#    """
+#    return glob.glob(os.path.join(folder, '**/*.*'), recursive=True)
 
 
 def insert_entry_db(entry):
@@ -80,6 +80,7 @@ def insert_entry_db(entry):
     index = gbd[COLLECTION]
     index.insert_one(entry)
     client.close()
+
 
 
 # Converte os atribuito globais do NetCDF para formatos mais adequados do MongoDB
@@ -109,88 +110,122 @@ def convert_netcdf_attributes_to_mongo(dataset):
     return d
 
 
-def save_to_db(input_folder, output_folder, overwrite=False):
-    print('GDB-Hidro load  NetCDF to database V0.0.1')
-    print('Input folder {}'.format(input_folder))
-    print('Root database folder {}'.format(output_folder))
+def insert_netcdf(input_file, output_folder, overwrite=False):
+    #print('GDB-Hidro load  NetCDF to database V0.0.1')
+    #print('Input folder {}'.format(input_folder))
+    #print('Root database folder {}'.format(output_folder))
 
-    input_file_paths = get_input_files(input_folder)
-    logger.debug('Input files: ', input_file_paths)
+    #input_file_paths = get_input_files(input_folder)
+    logger.debug('Input file: ', input_file)
+
+    if os.path.isdir(output_folder) is False:
+        raise NotADirectoryError('ERROR: {} directory not found'.format(output_folder))
+
 
     succeed = []
     failed = []
-    for input_file in input_file_paths:
-        print('{} '.format(input_file), end='')
+    #for input_file in input_file_paths:
+    #print('{} '.format(input_file), end='')
+
+
+    #try:
+
+    #rootgrp = Dataset(input_file, 'r')
+    with Dataset(input_file, 'r') as rootgrp:
+
+        if not hasattr(rootgrp, 'database_uuid'):
+            raise AttributeError('ERROR: database_uuid global attribute not found in netcdf file')
+
         try:
-            rootgrp = Dataset(input_file, 'r')
+            metadata = convert_netcdf_attributes_to_mongo(rootgrp)
+        except:
+            raise AttributeError('ERROR: converting NetCDF metadata')
 
-            if not hasattr(rootgrp, 'database_uuid'):
-                raise AttributeError('ERROR: database_uuid global attribute not found')
+        dst_folder = os.path.join(output_folder, os.path.dirname(rootgrp.database_uuid))
+        dst_file = os.path.basename(rootgrp.database_uuid)
+        # Create folder if not exits
+        os.makedirs(dst_folder, exist_ok=True)
+        dst_file_path = os.path.join(dst_folder, dst_file + '.zip')
 
-            try:
-                metadata = convert_netcdf_attributes_to_mongo(rootgrp)
-            except:
-                raise AttributeError('ERROR: converting NetCDF metadata')
+        # Verifica se arquivo ja existe
+        if not overwrite:
+            if os.path.exists(dst_file_path):
+                raise FileExistsError('ERROR: file already exist. Use -ow flag to overwrite')
 
-            dst_folder = os.path.join(output_folder, os.path.dirname(rootgrp.database_uuid))
-            dst_file = os.path.basename(rootgrp.database_uuid)
-            # Create folder if not exits
-            os.makedirs(dst_folder, exist_ok=True)
-            dst_file_path = os.path.join(dst_folder, dst_file + '.zip')
+        # Se chegou aqui pode copiar o arquivo com o novo nome
+        #print(' -> {}'.format(dst_file_path))
+        # compresslevel: 0 - (no compress) 9 (max compress)
+        # with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+        #compress level nao existe em python 3.6
+        with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.write(input_file, os.path.basename(input_file))
 
-            # Verifica se arquivo ja existe
-            if not overwrite:
-                if os.path.exists(dst_file_path):
-                    raise FileExistsError('ERROR: file already exist. Use -ow flag to overwrite')
+        # Adiciona no index
+        insert_entry_db(metadata)
 
-            # Se chegou aqui pode copiar o arquivo com o novo nome
-            print(' -> {}'.format(dst_file_path))
-            # compresslevel: 0 - (no compress) 9 (max compress)
-            # with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-            #compress level nao existe em python 3.6
-            with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-                zf.write(input_file, os.path.basename(input_file))
-
-            # Adiciona no index
-            insert_entry_db(metadata)
-
-        except (AttributeError, FileExistsError) as error:
-            # Algum erro foi gerado
-            failed.append(input_file)
-            print(error)
-        else:
-            # Nenhum erro gerado
-            succeed.append(input_file)
-        finally:
-            rootgrp.close()
+    #except (AttributeError, FileExistsError) as error:
+        # Algum erro foi gerado
+        #failed.append(input_file)
+        #print(error)
+        #raise error
+    #else:
+        # Nenhum erro gerado
+        #succeed.append(input_file)
+     #   pass
+    #finally:
+    #    if 'rootgrp' in locals():
+    #        rootgrp.close()
 
     # Mostra arqvuios que não foram convertidos
-    print('\nTotal uploaded: {}'.format(len(succeed)))
-    print('Total failed: {}'.format(len(failed)))
+    #print('\nTotal uploaded: {}'.format(len(succeed)))
+    #print('Total failed: {}'.format(len(failed)))
 
-    with open(LOG_FILE, 'w') as fo:
-        fo.write('Succeed upload:\n')
-        for item in succeed:
-            fo.write('{}\n'.format(item))
-        fo.write('\nFailed upload:\n')
-        for item in failed:
-            fo.write('{}\n'.format(item))
+    #with open(LOG_FILE, 'w') as fo:
+    #    fo.write('Succeed upload:\n')
+    #    for item in succeed:
+    #        fo.write('{}\n'.format(item))
+    #    fo.write('\nFailed upload:\n')
+    #    for item in failed:
+    #        fo.write('{}\n'.format(item))
 
-    print('Check file {} for more details'.format(LOG_FILE))
+    #print('Check file {} for more details'.format(LOG_FILE))
 
 
 def command_line():
-    parser = argparse.ArgumentParser(description='Load NetCDF to GBD database')
-    parser.add_argument("input", type=str, help="input folder")
-    parser.add_argument("output", type=str, help="root database folder")
+    TOOL_NAME = 'Insert a netcdf file to the database'
+    parser = argparse.ArgumentParser(description=TOOL_NAME)
+    parser.add_argument("input", type=str, help="netcdf input file (.nc)", nargs='+')
+    parser.add_argument('-o', "--output", type=str, help="root database folder")
     parser.add_argument('-ow', '--overwrite', help='overwrite output files', action='store_true')
     args = parser.parse_args()
 
-    out_folder = os.path.realpath(args.output)
-    in_folder = os.path.realpath(args.input)
+    if args.output is None:
+        # Usa diretorio generico se nao foi especificado
+        output = os.path.join(os.path.expanduser('~'), 'gbdroot')
+    else:
+        output = os.path.realpath(args.output)
+
+    #in_folder = os.path.realpath(args.input)
     overwrite = args.overwrite
 
-    save_to_db(in_folder, out_folder, overwrite)
+    input_files = args.input
+
+    print('MongoDB information:')
+    print('  url: {}'.format(MONGODB_URL))
+    print('  database: {}'.format(DATABASE))
+    print('  colection: {}'.format(COLLECTION))
+    print('Output directory: {}'.format(output))
+
+
+    logger.debug('Input files: {}'.format(input_files))
+    for input_file in input_files:
+        input_file = os.path.realpath(input_file)
+        if os.path.isdir(input_file):
+            # ignora diretorios
+            continue
+        else:
+            print(input_file)
+            insert_netcdf(input_file, output, overwrite)
 
 
 # Chamado da linha de comando
@@ -200,6 +235,6 @@ if __name__ == "__main__":
         in_folder = os.path.realpath(INPUT_FOLDER)
         out_folder = os.path.realpath(OUTPUT_FOLDER)
         overwrite = FILE_OVERWRITE
-        save_to_db(in_folder, out_folder, overwrite)
+        insert_netcdf(in_folder, out_folder, overwrite)
     else:
         command_line()

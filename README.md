@@ -94,11 +94,10 @@ O pacote cfunits precisa est biblioteca instalada para funcionar (ubuntu): ```su
 Também é necessário instalar o MongoDB. Verificar instruções para instalação do MongoDB na internet.
 
 ## Exemplos
-### HOBO Pendant Event UA-003-64
+### ONSET HOBO Pendant Event UA-003-64
 1. Exportar arquivo para (.csv) com a opção de detalhes ativada
-2. Converter o arquivo para netcdf: ```gbd-hobo2netcdf {nome do arquivo (.csv)}```
-3. Armazenar o arquivo  netcdf no banco de dados: ```gbd-insert-netcdf {nome do arquivo (.nc)}```
-4. Procurar um arquivo no banco de dados: ``` comando para procurar no banco```
-5. Recuperar um arquivo do banco de dados: ``` comando para recuperar arquivo do banco de dados```
-
+2. Converter o arquivo para NetCDF: ```gbd-hobo2netcdf {nome do arquivo (.csv)}```
+3. Armazenar o arquivo  NetCDF no banco de dados: ```gbd-insert-netcdf {nome do arquivo (.nc)}```
+4. Procurar por um arquivo no banco de dados: ```gbd-find {condicoes para procura}```
+5. Recuperar um arquivo do banco de dados: ```gbd-get {uuid}```
 

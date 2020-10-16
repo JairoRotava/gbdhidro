@@ -12,7 +12,7 @@ DST_FOLDER = os.path.realpath(os.path.join(here, './output/get_netcdf'))
 # Cria diretorio de saida
 os.makedirs(DST_FOLDER, exist_ok=True)
 # Caminho para executavel
-EXEC_PATH = os.path.realpath(os.path.join(here, '../get_netcdf.py'))
+EXEC_PATH = os.path.realpath(os.path.join(here, '../get.py'))
 
 
 def test_get_netcdf_to_db():
@@ -20,8 +20,7 @@ def test_get_netcdf_to_db():
     Teste para recuperar arquivo do banco de dados
     """
 
-
-    cmd = ['python', EXEC_PATH, UUID, DB_FOLDER, DST_FOLDER, '-ow']
+    cmd = ['python', EXEC_PATH, UUID, '-db', DB_FOLDER, '-dst', DST_FOLDER, '-ow']
     print('\nComando teste -> ' + ' '.join(cmd))
     output = subprocess.run(cmd)
     print(output.stdout)

@@ -12,6 +12,8 @@ DEBUG_DB_FOLDER = os.path.realpath('./test/output/database_root')
 DEBUG_DST_FOLDER = os.path.realpath('./test/output')
 DEBUG_OVERWRITE = True
 
+DATABASE_DEFAULT_PATH = os.path.join(os.path.expanduser('~'), 'gbdroot')
+
 # Inicia logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
@@ -47,16 +49,26 @@ def command_line():
     """
     Captura dados de linhas de comando
     """
-    parser = argparse.ArgumentParser(description='Get NetCDF from database')
+    TOOL_DESCRIPTION = 'Get NetCDF from database'
+    parser = argparse.ArgumentParser(description=TOOL_DESCRIPTION)
     parser.add_argument("uuid", type=str, help="NetCDF uuid")
-    parser.add_argument("db", type=str, help="root database folder")
-    parser.add_argument("dst", type=str, help="destination folder")
+    parser.add_argument("-db", '--database', type=str, help="root database folder")
+    parser.add_argument("-dst", '--destination', type=str, help="destination folder")
     parser.add_argument('-ow', '--overwrite', help='overwrite output file', action='store_true')
     args = parser.parse_args()
 
-    db = os.path.realpath(args.db)
-    dst = os.path.realpath(args.dst)
+    if args.database is None:
+        db = DATABASE_DEFAULT_PATH
+    else:
+        db = os.path.realpath(args.database)
+
+    if args.destination is None:
+        dst = os.path.realpath('.')
+    else:
+        dst = os.path.realpath(args.destination)
+
     uuid = args.uuid
+
     ow = args.overwrite
 
     get_from_db(uuid, db, dst, ow)

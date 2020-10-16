@@ -59,6 +59,8 @@ MONGODB_URL = '127.0.0.1:27017'
 DATABASE = 'gbdhidro'
 COLLECTION = 'index'
 
+DATABASE_DEFAULT_PATH = os.path.join(os.path.expanduser('~'), 'gbdroot')
+
 # Inicia logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
@@ -195,15 +197,15 @@ def command_line():
     TOOL_NAME = 'Insert a netcdf file to the database'
     parser = argparse.ArgumentParser(description=TOOL_NAME)
     parser.add_argument("input", type=str, help="netcdf input file (.nc)", nargs='+')
-    parser.add_argument('-o', "--output", type=str, help="root database folder")
+    parser.add_argument('-db', "--database", type=str, help="root database folder")
     parser.add_argument('-ow', '--overwrite', help='overwrite output files', action='store_true')
     args = parser.parse_args()
 
-    if args.output is None:
+    if args.database is None:
         # Usa diretorio generico se nao foi especificado
-        output = os.path.join(os.path.expanduser('~'), 'gbdroot')
+        output = DATABASE_DEFAULT_PATH
     else:
-        output = os.path.realpath(args.output)
+        output = os.path.realpath(args.database)
 
     #in_folder = os.path.realpath(args.input)
     overwrite = args.overwrite

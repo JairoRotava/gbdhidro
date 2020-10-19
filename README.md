@@ -101,3 +101,5 @@ Também é necessário instalar o MongoDB. Verificar instruções para instalaç
 4. Procurar por um arquivo no banco de dados: ```gbd-find -k EH-P02 --after 2018 --cornerlat -32.0 -31 --cornerlon -53.0 -52```
 5. Recuperar um arquivo do banco de dados: ```gbd-get {uuid}```
 
+
+

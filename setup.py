@@ -57,6 +57,7 @@ setup(
               'gbd-get=gbdhidro.database.get:command_line',
               'gbd-insert-netcdf=gbdhidro.database.insert_netcdf:command_line',
               'gbd-hobo2netcdf=gbdhidro.netcdf.station_raw_to_netcdf.hobo_ua_003_64.hobo_ua_003_64_to_netcdf:command_line',
+              'gbd-find=gbdhidro.database.find:command_line',
           ]
       },
       zip_safe=False)

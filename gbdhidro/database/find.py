@@ -66,7 +66,7 @@ DATABASE_DEFAULT_PATH = os.path.join(os.path.expanduser('~'), 'gbdroot')
 
 # Inicia logging
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 
 
 
@@ -114,7 +114,7 @@ query = {
     '$and': query_list
 }
 
-def make_query(uuid=None, before=None, after=None, latlon=None, keywords=None, custom=None):
+def make_query(uuid=None, before=None, after=None, cornerlon=None, cornerlat=None, keywords=None, custom=None):
     query_list = []
     # uuid
     if uuid:
@@ -129,37 +129,33 @@ def make_query(uuid=None, before=None, after=None, latlon=None, keywords=None, c
     if after:
         query_list.append({'time_coverage_end': {'$gte': after}})
 
-
-
-    date = None
-    # start/stop dates
-    if date:
-        # Query para pegar qualquer dado que tenha algum overlap de tempo nessa faixa
-        start_date = date[0]
-        end_date = date[1]
-        query_start_stop = {
-            '$and': [
-                {'time_coverage_start': {'$lte': end_date}},
-                {'time_coverage_end': {'$gte': start_date}}
-            ]
-        }
-        query_list.append(query_start_stop)
-    # lat/lon area
-    if latlon:
-        lat_min = latlon[0]
-        lon_min = latlon[1]
-        lat_max = latlon[2]
-        lon_max = latlon[3]
+    # cornerlon
+    if cornerlon:
+        lon_min = cornerlon[0]
+        lon_max = cornerlon[1]
         # Query para pegar qualquer dado que tenha um overlap com essa area de lat/lon
-        query_lat_lon = {
+        query_lon = {
             '$and': [
-                {'geospatial_lat_min': {'$lte': lat_max}},
-                {'geospatial_lat_max': {'$gte': lat_min}},
                 {'geospatial_lon_min': {'$lte': lon_max}},
                 {'geospatial_lon_max': {'$gte': lon_min}}
             ]
         }
-        query_list.append(query_start_stop)
+        query_list.append(query_lon)
+
+    # cornerlat
+    if cornerlat:
+        lat_min = cornerlat[0]
+        lat_max = cornerlat[1]
+        # Query para pegar qualquer dado que tenha um overlap com essa area de lat/lon
+        query_lat = {
+            '$and': [
+                {'geospatial_lat_min': {'$lte': lat_max}},
+                {'geospatial_lat_max': {'$gte': lat_min}}
+            ]
+        }
+        query_list.append(query_lat)
+
+
     # keywords
     if keywords:
         query_keywords = {'keywords': {'$in': keywords}}
@@ -189,23 +185,34 @@ def command_line():
     parser.add_argument('-uuid', type=str, help="uuid")
     parser.add_argument('-b', "--before", type=str, help="before datetime ISO8601 (eg. 2004-06-23T22:00:00Z)")
     parser.add_argument('-a', "--after", type=str, help="after datetime ISO8601 (eg. 2004-06-23T22:00:00Z)")
-    parser.add_argument('--north_of', type=str, help="north of latitude (decimal)")
-    parser.add_argument('--south_of', type=str, help="south of latitude (decimal)")
-    parser.add_argument('--east_of', type=str, help="east of longitude (decimal)")
-    parser.add_argument('--west_of', type=str, help="west of longitude (decimal)")
-    parser.add_argument('-r', "--region",  type=str, help="region")
+    parser.add_argument('--cornerlon', type=float, nargs='+', help="longitude in decimal degrees of box corners (eg. 10.2  13.23)")
+    parser.add_argument('--cornerlat', type=float, nargs='+', help="latitude in decimal degrees of box corners (eg. -12.2 -1.1)")
     parser.add_argument('-k', '--keywords', type=str, help="keywords: 'keyword1, keyword2'")
     parser.add_argument('-c', '--custom', type=str, help="custom search:  '(mongodb syntax)'")
     args = parser.parse_args()
 
     uuid = args.uuid
     #period = args.period
-    region = args.region
+    #region = args.region
 
     #    Date and time in UTC
     #    2020-10-16T19:27:42+00:00
     #    2020-10-16T19:27:42Z
     #    20201016T192742Z
+
+    if args.cornerlon:
+        cornerlon = args.cornerlon
+        logger.debug('Corner longitude: {}'.format(cornerlon))
+    else:
+        cornerlon = None
+
+    if args.cornerlat:
+        cornerlat = args.cornerlat
+        logger.debug('Corner latitude: {}'.format(cornerlat))
+    else:
+        cornerlat = None
+
+
     if args.before:
         before = iso8601.parse_date(args.before)
         logger.debug('Before: {}'.format(before))
@@ -228,7 +235,8 @@ def command_line():
     client = MongoClient(MONGODB_URL)
     gbd = client[DATABASE]
     index = gbd[COLLECTION]
-    my_query = make_query(uuid=uuid, before=before, after=after, latlon=region, keywords=keywords, custom=custom)
+    my_query = make_query(uuid=uuid, before=before, after=after, cornerlon=cornerlon, cornerlat=cornerlat,
+                          keywords=keywords, custom=custom)
     logger.debug('Mongodb query: {}'.format(my_query))
     items = index.find(my_query)
     total_found = 0

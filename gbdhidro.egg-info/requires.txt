@@ -5,6 +5,7 @@ python-dateutil
 cfchecker
 cfunits
 pymongo
+iso8601
 
 [testing]
 pytest

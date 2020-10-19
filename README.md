@@ -96,8 +96,8 @@ Também é necessário instalar o MongoDB. Verificar instruções para instalaç
 ## Exemplos
 ### ONSET HOBO Pendant Event UA-003-64
 1. Exportar arquivo para (.csv) com a opção de detalhes ativada
-2. Converter o arquivo para NetCDF: ```gbd-hobo2netcdf {nome do arquivo (.csv)}```
-3. Armazenar o arquivo  NetCDF no banco de dados: ```gbd-insert-netcdf {nome do arquivo (.nc)}```
-4. Procurar por um arquivo no banco de dados: ```gbd-find {condicoes para procura}```
+2. Converter o arquivo para NetCDF: ```gbd-hobo2netcdf nome_do_arquivo.csv``` ou ```gbd-hobo2netcdf ./diretorio/*.csv``` 
+3. Armazenar o arquivo  NetCDF no banco de dados: ```gbd-insert-netcdf nome_do_arquivo.nc``` ou ```gbd-insert-netcdf ./diretorio/*.nc``` 
+4. Procurar por um arquivo no banco de dados: ```gbd-find -k EH-P02 --after 2018 --cornerlat -32.0 -31 --cornerlon -53.0 -52```
 5. Recuperar um arquivo do banco de dados: ```gbd-get {uuid}```
 

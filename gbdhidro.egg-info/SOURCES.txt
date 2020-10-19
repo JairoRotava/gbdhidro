@@ -4,7 +4,6 @@ MANIFEST.in
 README.md
 setup.py
 gbdhidro/__init__.py
-gbdhidro/process_files.py
 gbdhidro.egg-info/PKG-INFO
 gbdhidro.egg-info/SOURCES.txt
 gbdhidro.egg-info/dependency_links.txt
@@ -14,13 +13,12 @@ gbdhidro.egg-info/requires.txt
 gbdhidro.egg-info/top_level.txt
 gbdhidro/database/__init__.py
 gbdhidro/database/database_index.py
-gbdhidro/database/find_db.py
+gbdhidro/database/find.py
 gbdhidro/database/get.py
 gbdhidro/database/insert_netcdf.py
 gbdhidro/hobo/__init__.py
 gbdhidro/hobo/hobo.py
 gbdhidro/netcdf/__init__.py
 gbdhidro/netcdf/cf.py
-gbdhidro/netcdf/convert_batch_netcdf.py
 gbdhidro/netcdf/netcdfjson.py
 gbdhidro/netcdf/util.py

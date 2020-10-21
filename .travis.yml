@@ -1,12 +1,12 @@
 language: python
 python:
   - "3.6"
-services:
-  - mongodb
+#services:
+#  - mongodb
 before_install:
   - sudo apt-get -y install udunits-bin
   - sleep 15
-  - mongo mydb_test --eval 'db.createUser({user:"travis",pwd:"test",roles:["readWrite"]});'
+#  - mongo mydb_test --eval 'db.createUser({user:"travis",pwd:"test",roles:["readWrite"]});'
   - docker-compose -f ./gbdserver/gbdserver_docker_test.yml up -d
 install:
   - pip install .

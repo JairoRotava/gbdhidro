@@ -55,9 +55,16 @@ FILE_OVERWRITE = True
 ERROR_CODE = 1
 LOG_FILE = 'upload.log'
 # Mongodb info
-MONGODB_URL = '127.0.0.1:27017'
+#MONGODB_URL = '127.0.0.1:27017'
+#DATABASE = 'gbdhidro'
+#COLLECTION = 'index'
+# Docker mongodb
+MONGODB_URL = 'localhost:17017'
 DATABASE = 'gbdhidro'
 COLLECTION = 'index'
+USER = 'root'
+PASS = 'example'
+
 
 DATABASE_DEFAULT_PATH = os.path.join(os.path.expanduser('~'), 'gbdroot')
 
@@ -77,7 +84,7 @@ logging.basicConfig(level=logging.WARNING)
 
 
 def insert_entry_db(entry):
-    client = MongoClient(MONGODB_URL)
+    client = MongoClient(MONGODB_URL, username=USER, password=PASS)
     gbd = client[DATABASE]
     index = gbd[COLLECTION]
     index.insert_one(entry)

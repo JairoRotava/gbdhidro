@@ -7,6 +7,7 @@ before_install:
   - sudo apt-get -y install udunits-bin
   - sleep 15
   - mongo mydb_test --eval 'db.createUser({user:"travis",pwd:"test",roles:["readWrite"]});'
+  - docker-compose -f ./gbdserver/gbdserver_docker_test.yml up
 install:
   - pip install .
 script:

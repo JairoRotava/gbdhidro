@@ -1,3 +1,4 @@
+# docker-compose para servidor teste gbdserver
 version: '3.1'
 
 services:

@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 import shutil
+import pysftp
 
 DEBUG = False
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -11,6 +12,13 @@ DEBUG_UUID = 'gbdhidro/estacoes/eh-p05/EH-P05_20200226T190000Z_20200508T151000Z.
 DEBUG_DB_FOLDER = os.path.realpath('./test/output/database_root')
 DEBUG_DST_FOLDER = os.path.realpath('./test/output')
 DEBUG_OVERWRITE = True
+
+# sftp
+SFTP_HOSTNAME = 'localhost'
+SFTP_USER = 'foo'
+SFTP_PASSWORD = 'pass'
+SFTP_PORT = 2222
+SFTP_ROOT = 'gbdserver'
 
 DATABASE_DEFAULT_PATH = os.path.join(os.path.expanduser('~'), 'gbdroot')
 
@@ -29,11 +37,12 @@ def get_from_db(uuid, db_folder, dst_folder, overwrite=False):
     """
     logger.debug('uuid: {}'.format(uuid))
     logger.debug('database root: {}'.format(db_folder))
-    src_file = os.path.join(db_folder, uuid + '.zip')
+    src_file = os.path.join(SFTP_ROOT, uuid + '.zip')
     logger.debug('src_file: {}'.format(src_file))
+
     # Checa se uuid (arquivo) existe
-    if not os.path.exists(src_file):
-        raise FileExistsError('ERROR: uuid not found')
+    #if not os.path.exists(src_file):
+    #    raise FileExistsError('ERROR: uuid not found')
 
     dst_file = os.path.join(dst_folder, os.path.basename(uuid) + '.zip')
     logger.debug('dst_file: {}'.format(dst_file))
@@ -42,7 +51,19 @@ def get_from_db(uuid, db_folder, dst_folder, overwrite=False):
         raise FileExistsError('ERROR: destination file already exist')
 
     # Copia arquivo para destina
-    shutil.copyfile(src_file, dst_file)
+    #shutil.copyfile(src_file, dst_file)
+    # Pega arquivo do sftp
+
+    read_sftp(src_file, dst_file, SFTP_HOSTNAME, SFTP_PORT, SFTP_USER, SFTP_PASSWORD)
+
+
+def read_sftp(file, local_folder, hostname, port, username, password):
+    cnopts = pysftp.CnOpts()
+    cnopts.hostkeys = None
+    with pysftp.Connection(host=hostname, username=username, password=password, port=port,
+                           cnopts=cnopts) as sftp:
+        sftp.get(file, local_folder)
+
 
 
 def command_line():

@@ -45,6 +45,9 @@ import zipfile
 from pymongo import MongoClient
 from gbdhidro.netcdf import cf
 import numpy
+import pysftp
+import tempfile
+import shutil
 
 DEBUG = False
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -65,6 +68,12 @@ COLLECTION = 'index'
 USER = 'root'
 PASS = 'example'
 
+# sftp
+SFTP_HOSTNAME = 'localhost'
+SFTP_USER = 'foo'
+SFTP_PASSWORD = 'pass'
+SFTP_PORT = 2222
+SFTP_ROOT = 'gbdserver'
 
 DATABASE_DEFAULT_PATH = os.path.join(os.path.expanduser('~'), 'gbdroot')
 
@@ -74,6 +83,7 @@ logging.basicConfig(level=logging.WARNING)
 
 
 # TODO: precisa verificar como fazer quando o arquivo é sobreescrito, e como atualizar isso no index
+# mudar para put o nome da funcao
 
 
 #def get_input_files(folder):
@@ -119,6 +129,19 @@ def convert_netcdf_attributes_to_mongo(dataset):
     return d
 
 
+def save_sftp(file, folder, hostname, port, username, password):
+    # Envia pelo sftp
+    # TODO: por hora ignora o key do host. Verificar como fazer nesse caso para evitar o man in the middle
+    cnopts = pysftp.CnOpts()
+    cnopts.hostkeys = None
+    with pysftp.Connection(host=hostname, username=username, password=password, port=port,
+                           cnopts=cnopts) as sftp:
+        sftp.makedirs(folder)
+        sftp.chdir(folder)
+        sftp.put(file)
+    return
+
+
 def insert_netcdf(input_file, output_folder, overwrite=False):
     #print('GDB-Hidro load  NetCDF to database V0.0.1')
     #print('Input folder {}'.format(input_folder))
@@ -127,8 +150,6 @@ def insert_netcdf(input_file, output_folder, overwrite=False):
     #input_file_paths = get_input_files(input_folder)
     logger.debug('Input file: ', input_file)
 
-    if os.path.isdir(output_folder) is False:
-        raise NotADirectoryError('ERROR: {} directory not found'.format(output_folder))
 
 
     succeed = []
@@ -150,54 +171,52 @@ def insert_netcdf(input_file, output_folder, overwrite=False):
         except:
             raise AttributeError('ERROR: converting NetCDF metadata')
 
-        dst_folder = os.path.join(output_folder, os.path.dirname(rootgrp.database_uuid))
+
+        # TODO: Salva para diretorio. Codigo que deve ser removido depois de FTP esta pronto
+        save_to_disk = False
+        relative_folder = os.path.dirname(rootgrp.database_uuid)
+        dst_folder = os.path.join(output_folder, relative_folder)
         dst_file = os.path.basename(rootgrp.database_uuid)
-        # Create folder if not exits
-        os.makedirs(dst_folder, exist_ok=True)
-        dst_file_path = os.path.join(dst_folder, dst_file + '.zip')
 
-        # Verifica se arquivo ja existe
-        if not overwrite:
-            if os.path.exists(dst_file_path):
-                raise FileExistsError('ERROR: file already exist. Use -ow flag to overwrite')
+        if os.path.isdir(output_folder) is False:
+            raise NotADirectoryError('ERROR: {} directory not found'.format(output_folder))
 
-        # Se chegou aqui pode copiar o arquivo com o novo nome
-        #print(' -> {}'.format(dst_file_path))
-        # compresslevel: 0 - (no compress) 9 (max compress)
-        # with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-        #compress level nao existe em python 3.6
+        if save_to_disk:
+            # Create folder if not exits
+            os.makedirs(dst_folder, exist_ok=True)
+            dst_file_path = os.path.join(dst_folder, dst_file + '.zip')
+
+            # Verifica se arquivo ja existe
+            if not overwrite:
+                if os.path.exists(dst_file_path):
+                    raise FileExistsError('ERROR: file already exist. Use -ow flag to overwrite')
+
+            # Se chegou aqui pode copiar o arquivo com o novo nome
+            #print(' -> {}'.format(dst_file_path))
+            # compresslevel: 0 - (no compress) 9 (max compress)
+            # with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+            #compress level nao existe em python 3.6
+            with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                zf.write(input_file, os.path.basename(input_file))
+
+
+        # Comprime arquivo antes de enviar para armazenamento
+
+        # Gera nome e pasta de destino a partir do uuid. Deixa tudo em lowercase para manter padrao
+        # TODO: Checar se nomes sao validos para armazenar no sftp
+        relative_folder = os.path.dirname(rootgrp.database_uuid).lower()
+        dst_file = os.path.basename(rootgrp.database_uuid).lower()
+
+        tmpdir = tempfile.mkdtemp()
+        dst_file_path = os.path.join(tmpdir, dst_file + '.zip')
+
         with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             zf.write(input_file, os.path.basename(input_file))
+        save_sftp(dst_file_path, SFTP_ROOT + '/' + relative_folder, SFTP_HOSTNAME, SFTP_PORT, SFTP_USER, SFTP_PASSWORD)
+        shutil.rmtree(tmpdir)
 
-        # Adiciona no index
+        # Adiciona no index do mongodb
         insert_entry_db(metadata)
-
-    #except (AttributeError, FileExistsError) as error:
-        # Algum erro foi gerado
-        #failed.append(input_file)
-        #print(error)
-        #raise error
-    #else:
-        # Nenhum erro gerado
-        #succeed.append(input_file)
-     #   pass
-    #finally:
-    #    if 'rootgrp' in locals():
-    #        rootgrp.close()
-
-    # Mostra arqvuios que não foram convertidos
-    #print('\nTotal uploaded: {}'.format(len(succeed)))
-    #print('Total failed: {}'.format(len(failed)))
-
-    #with open(LOG_FILE, 'w') as fo:
-    #    fo.write('Succeed upload:\n')
-    #    for item in succeed:
-    #        fo.write('{}\n'.format(item))
-    #    fo.write('\nFailed upload:\n')
-    #    for item in failed:
-    #        fo.write('{}\n'.format(item))
-
-    #print('Check file {} for more details'.format(LOG_FILE))
 
 
 def command_line():

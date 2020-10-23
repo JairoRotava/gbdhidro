@@ -172,16 +172,16 @@ def insert_netcdf(input_file, output_folder, overwrite=False):
             raise AttributeError('ERROR: converting NetCDF metadata')
 
 
-        # TODO: Salva para diretorio. Codigo que deve ser removido depois de FTP esta pronto
-        save_to_disk = False
         relative_folder = os.path.dirname(rootgrp.database_uuid)
         dst_folder = os.path.join(output_folder, relative_folder)
         dst_file = os.path.basename(rootgrp.database_uuid)
 
-        if os.path.isdir(output_folder) is False:
-            raise NotADirectoryError('ERROR: {} directory not found'.format(output_folder))
-
+        # TODO: Salva para diretorio. Codigo que deve ser removido depois de FTP esta pronto
+        save_to_disk = False
         if save_to_disk:
+            if os.path.isdir(output_folder) is False:
+                raise NotADirectoryError('ERROR: {} directory not found'.format(output_folder))
+
             # Create folder if not exits
             os.makedirs(dst_folder, exist_ok=True)
             dst_file_path = os.path.join(dst_folder, dst_file + '.zip')

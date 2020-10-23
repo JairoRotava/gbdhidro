@@ -1,26 +1,26 @@
 import pytest
 import os
 import subprocess
-
+import glob
 from gbdhidro.hobo import hobo
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-INPUT_FOLDER = os.path.realpath(os.path.join(here, './station_files/p02/p02.nc'))
+#INPUT_FOLDER = os.path.realpath(os.path.join(here, './station_files/*.nc'))
+INPUT_FILES = glob.glob(os.path.realpath(os.path.join(here, './station_files/*.nc')))
 OUTPUT_FOLDER = os.path.realpath(os.path.join(here, './output/database_root'))
 # Cria diretorio de saida
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+#os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 FILE_PATH = os.path.realpath(os.path.join(here, '../insert_netcdf.py'))
-
 
 
 def test_insert_netcdf():
     """
-    Faz um teste de conversao dos arquivo hobo. Se der algum pau ele gera um erro
+    Insere arquivos netcdf no banco de dados
     """
 
 
-    cmd = ['python', FILE_PATH, INPUT_FOLDER, '-db', OUTPUT_FOLDER, '-ow']
+    cmd = ['python', FILE_PATH] + INPUT_FILES + ['-db', OUTPUT_FOLDER, '-ow']
     print('\nComando teste -> ' + ' '.join(cmd))
     output = subprocess.run(cmd)
     print(output.stdout)

@@ -11,7 +11,7 @@ INPUT_FILES = glob.glob(os.path.realpath(os.path.join(here, './station_files/*.n
 OUTPUT_FOLDER = os.path.realpath(os.path.join(here, './output/database_root'))
 # Cria diretorio de saida
 #os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-FILE_PATH = os.path.realpath(os.path.join(here, '../insert_netcdf.py'))
+FILE_PATH = os.path.realpath(os.path.join(here, '../put_netcdf.py'))
 
 
 def test_insert_netcdf():

@@ -142,7 +142,7 @@ def save_sftp(file, folder, hostname, port, username, password):
     return
 
 
-def insert_netcdf(input_file, output_folder, overwrite=False):
+def put_netcdf(input_file, output_folder, overwrite=False):
     #print('GDB-Hidro load  NetCDF to database V0.0.1')
     #print('Input folder {}'.format(input_folder))
     #print('Root database folder {}'.format(output_folder))
@@ -253,7 +253,7 @@ def command_line():
             continue
         else:
             print(input_file)
-            insert_netcdf(input_file, output, overwrite)
+            put_netcdf(input_file, output, overwrite)
 
 
 # Chamado da linha de comando
@@ -263,6 +263,6 @@ if __name__ == "__main__":
         in_folder = os.path.realpath(INPUT_FOLDER)
         out_folder = os.path.realpath(OUTPUT_FOLDER)
         overwrite = FILE_OVERWRITE
-        insert_netcdf(in_folder, out_folder, overwrite)
+        put_netcdf(in_folder, out_folder, overwrite)
     else:
         command_line()

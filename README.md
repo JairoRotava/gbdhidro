@@ -1,4 +1,4 @@
-# GBD Hidro 
+# GBD Hidro (Gerenciador de banco de dados)
  
 ## Descrição
 

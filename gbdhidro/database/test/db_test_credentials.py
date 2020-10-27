@@ -1,16 +1,22 @@
 # Credenciais MongoDB para testes
 
+# Usuario para acesso livre
+DEFAULT_USER = 'anonymous'
+DEFAULT_PASS = 'guest'
+
 # MongoDB
-MONGO_USER = 'mongo_user'
+MONGO_USER = DEFAULT_USER
+MONGO_PASSWORD = DEFAULT_PASS
 MONGO_HOSTNAME = 'localhost'
-MONGO_PASSWORD = 'mongo_pass'
 MONGO_PORT = 17017
 MONGO_DATABASE = 'database'
 MONGO_COLLECTION = 'index'
 
 # Credenciais SFTP para testes
-SFTP_USER = 'foo'
+SFTP_USER = DEFAULT_USER
+SFTP_PASSWORD = DEFAULT_PASS
 SFTP_HOSTNAME = 'localhost'
-SFTP_PASSWORD = 'pass'
 SFTP_PORT = 2222
 SFTP_ROOT = 'gbdserver'
+
+

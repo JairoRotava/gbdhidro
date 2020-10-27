@@ -56,7 +56,6 @@ def get_from_db(uuid, user, hostname, port, password, db_folder, dst_folder, ove
     #shutil.copyfile(src_file, dst_file)
     # Pega arquivo do sftp
 
-
     read_sftp(src_file, dst_file, user, hostname, port, password)
 
 
@@ -66,7 +65,6 @@ def read_sftp(file, local_folder, username, hostname, port, password):
     with pysftp.Connection(host=hostname, username=username, password=password, port=port,
                            cnopts=cnopts) as sftp:
         sftp.get(file, local_folder)
-
 
 
 def command_line():
@@ -93,8 +91,7 @@ def command_line():
         hostname = SFTP_HOSTNAME
         port = SFTP_PORT
     else:
-        # TODO: interpretar a string user@hostname:port
-        #regex = "(ftp|sftp)://(\\S+):(\\S+)@([\\S&&[^:]]+)(:(\\d+))?"
+        # Interpreta user@hostname:port
         regex = "((?P<user>\S+)@)?(?P<hostname>[^:]+)(:(?P<port>\d+))?"
         pattern = re.compile(regex)
         m = pattern.match(args.user)

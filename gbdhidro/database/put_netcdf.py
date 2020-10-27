@@ -48,6 +48,7 @@ import numpy
 import pysftp
 import tempfile
 import shutil
+import re
 
 DEBUG = False
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -65,15 +66,28 @@ LOG_FILE = 'upload.log'
 MONGODB_URL = 'localhost:17017'
 DATABASE = 'gbdhidro'
 COLLECTION = 'index'
-USER = 'root'
-PASS = 'example'
+USER = 'anonymous'
+PASS = 'guest'
+
+# mongo
+MONGO_HOSTNAME = 'localhost'
+MONGO_USER = 'anonymous'
+MONGO_PASSWORD = 'guest'
+MONGO_PORT = 17017
+MONGO_DATABASE = 'gbdhidro'
+MONGO_COLLECTION = 'index'
+
 
 # sftp
 SFTP_HOSTNAME = 'localhost'
-SFTP_USER = 'foo'
-SFTP_PASSWORD = 'pass'
+SFTP_USER = 'anonymous'
+SFTP_PASSWORD = 'guest'
 SFTP_PORT = 2222
 SFTP_ROOT = 'gbdserver'
+
+DEFAULT_SFTP_ROOT = 'gbdserver'
+DEFAULT_MONGO_DATABASE = 'gbdhidro'
+
 
 DATABASE_DEFAULT_PATH = os.path.join(os.path.expanduser('~'), 'gbdroot')
 
@@ -93,13 +107,13 @@ logging.basicConfig(level=logging.WARNING)
 #    return glob.glob(os.path.join(folder, '**/*.*'), recursive=True)
 
 
-def insert_entry_db(entry):
-    client = MongoClient(MONGODB_URL, username=USER, password=PASS)
-    gbd = client[DATABASE]
+#insert_entry_db(metadata, index_cred['hostname'], index_cred['port'], index_cred['user'], index_cred['password'])
+def insert_entry_db(entry, hostname, port, user, password, database):
+    client = MongoClient(hostname, port=port, username=user, password=password)
+    gbd = client[database]
     index = gbd[COLLECTION]
     index.insert_one(entry)
     client.close()
-
 
 
 # Converte os atribuito globais do NetCDF para formatos mais adequados do MongoDB
@@ -142,25 +156,11 @@ def save_sftp(file, folder, hostname, port, username, password):
     return
 
 
-def put_netcdf(input_file, output_folder, overwrite=False):
-    #print('GDB-Hidro load  NetCDF to database V0.0.1')
-    #print('Input folder {}'.format(input_folder))
-    #print('Root database folder {}'.format(output_folder))
-
-    #input_file_paths = get_input_files(input_folder)
+def put_netcdf(input_file, index_cred, ftp_cred, overwrite=False):
     logger.debug('Input file: ', input_file)
+    logger.debug('Index credential: {}'.format(index_cred))
+    logger.debug('SFTP credential: {}'.format(ftp_cred))
 
-
-
-    succeed = []
-    failed = []
-    #for input_file in input_file_paths:
-    #print('{} '.format(input_file), end='')
-
-
-    #try:
-
-    #rootgrp = Dataset(input_file, 'r')
     with Dataset(input_file, 'r') as rootgrp:
 
         if not hasattr(rootgrp, 'database_uuid'):
@@ -171,36 +171,7 @@ def put_netcdf(input_file, output_folder, overwrite=False):
         except:
             raise AttributeError('ERROR: converting NetCDF metadata')
 
-
         relative_folder = os.path.dirname(rootgrp.database_uuid)
-        dst_folder = os.path.join(output_folder, relative_folder)
-        dst_file = os.path.basename(rootgrp.database_uuid)
-
-        # TODO: Salva para diretorio. Codigo que deve ser removido depois de FTP esta pronto
-        save_to_disk = False
-        if save_to_disk:
-            if os.path.isdir(output_folder) is False:
-                raise NotADirectoryError('ERROR: {} directory not found'.format(output_folder))
-
-            # Create folder if not exits
-            os.makedirs(dst_folder, exist_ok=True)
-            dst_file_path = os.path.join(dst_folder, dst_file + '.zip')
-
-            # Verifica se arquivo ja existe
-            if not overwrite:
-                if os.path.exists(dst_file_path):
-                    raise FileExistsError('ERROR: file already exist. Use -ow flag to overwrite')
-
-            # Se chegou aqui pode copiar o arquivo com o novo nome
-            #print(' -> {}'.format(dst_file_path))
-            # compresslevel: 0 - (no compress) 9 (max compress)
-            # with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-            #compress level nao existe em python 3.6
-            with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-                zf.write(input_file, os.path.basename(input_file))
-
-
-        # Comprime arquivo antes de enviar para armazenamento
 
         # Gera nome e pasta de destino a partir do uuid. Deixa tudo em lowercase para manter padrao
         # TODO: Checar se nomes sao validos para armazenar no sftp
@@ -212,38 +183,100 @@ def put_netcdf(input_file, output_folder, overwrite=False):
 
         with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             zf.write(input_file, os.path.basename(input_file))
-        save_sftp(dst_file_path, SFTP_ROOT + '/' + relative_folder, SFTP_HOSTNAME, SFTP_PORT, SFTP_USER, SFTP_PASSWORD)
+
+        save_sftp(dst_file_path, ftp_cred['root'] + '/' + relative_folder, ftp_cred['hostname'], ftp_cred['port'],
+                  ftp_cred['user'], ftp_cred['password'])
         shutil.rmtree(tmpdir)
 
         # Adiciona no index do mongodb
-        insert_entry_db(metadata)
+        insert_entry_db(metadata, index_cred['hostname'], index_cred['port'], index_cred['user'],
+                        index_cred['password'], index_cred['database'])
 
 
 def command_line():
     TOOL_NAME = 'Insert a netcdf file to the database'
     parser = argparse.ArgumentParser(description=TOOL_NAME)
     parser.add_argument("input", type=str, help="netcdf input file (.nc)", nargs='+')
-    parser.add_argument('-db', "--database", type=str, help="root database folder")
+    parser.add_argument("--user", type=str, help="files credential user:password@host:port/root")
+    parser.add_argument("--user_index", type=str, help="index credential user:password@host:port")
     parser.add_argument('-ow', '--overwrite', help='overwrite output files', action='store_true')
     args = parser.parse_args()
 
-    if args.database is None:
-        # Usa diretorio generico se nao foi especificado
-        output = DATABASE_DEFAULT_PATH
+    # Credenciais para sftp
+    if args.user is None:
+        sftp = {
+            'user': SFTP_USER,
+            'hostname': SFTP_HOSTNAME,
+            'password': SFTP_PASSWORD,
+            'port': SFTP_PORT,
+            'root': SFTP_ROOT
+        }
     else:
-        output = os.path.realpath(args.database)
+        # Interpreta user@hostname:port
+        # regex = "((?P<user>\S+)@)?(?P<hostname>[^:]+)(:(?P<port>\d+))?"
+        # BUG: existe um problema com isso, pois se o password tiver @/: vai dar pau. Nesse caso user e pass precisam ser
+        # enconded (SEI LA OQUE SIGNIFICA ISSO) RESOLVER NO FUTURO
+        # 'user:pass@hostname:port/path'
+        regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
+        pattern = re.compile(regex)
+        m = pattern.match(args.user)
+        sftp = {
+            'user': m.group('user'),
+            'hostname': m.group('hostname'),
+            'port': int(m.group('port')),
+            'password': m.group('password'),
+            'root': m.group('path')
+        }
 
-    #in_folder = os.path.realpath(args.input)
+    # Use default root is not defined
+    if sftp['root'] is None:
+        sftp['root'] = DEFAULT_SFTP_ROOT
+
+    # TODO: pedir pela senha no comando de linha. Isso é importante para permitir chamada segura sem a senha
+    # exposta na linha de comando
+    if sftp['password'] is None:
+        raise ValueError('Senha para SFTP não declarada. TODO:Falta implementar')
+
+
+    # Credenciais para index/Mongo
+    if args.user_index is None:
+        mongo = {
+            'user': MONGO_USER,
+            'hostname': MONGO_HOSTNAME,
+            'port': MONGO_PORT,
+            'password': MONGO_PASSWORD
+        }
+    else:
+        #regex = "((?P<user>\S+)@)?(?P<hostname>[^:]+)(:(?P<port>\d+))?"
+        # 'user:pass@hostname:port/path'
+        regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
+        pattern = re.compile(regex)
+        m = pattern.match(args.user_index)
+        mongo = {
+            'user': m.group('user'),
+            'hostname': m.group('hostname'),
+            'port': int(m.group('port')),
+            'password': m.group('password'),
+            'database': m.group('path')
+        }
+
+    if mongo['database'] is None:
+        mongo['database'] = DEFAULT_MONGO_DATABASE
+
+    # TODO: pedir pela senha no comando de linha. Isso é importante para permitir chamada segura sem a senha
+    # exposta na linha de comando
+
+    if mongo['password'] is None:
+        raise ValueError('Senha para index não declarada. TODO:Falta implementar')
+
     overwrite = args.overwrite
 
     input_files = args.input
 
-    print('MongoDB information:')
-    print('  url: {}'.format(MONGODB_URL))
-    print('  database: {}'.format(DATABASE))
-    print('  colection: {}'.format(COLLECTION))
-    print('Output directory: {}'.format(output))
-
+    #print('MongoDB information:')
+    #print('  hostname: {}'.format(mongo['hostname']))
+    #print('  database: {}'.format(MONGO_DATABASE))
+    #print('  colection: {}'.format(MONGO_COLLECTION))
 
     logger.debug('Input files: {}'.format(input_files))
     for input_file in input_files:
@@ -253,7 +286,7 @@ def command_line():
             continue
         else:
             print(input_file)
-            put_netcdf(input_file, output, overwrite)
+            put_netcdf(input_file, mongo, sftp, overwrite)
 
 
 # Chamado da linha de comando

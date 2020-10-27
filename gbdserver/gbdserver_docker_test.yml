@@ -10,8 +10,8 @@ services:
     ports:
       - 17017:27017
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_ROOT_USERNAME: anonymous
+      MONGO_INITDB_ROOT_PASSWORD: guest
 
   mongo-express:
     image: mongo-express
@@ -19,14 +19,14 @@ services:
     ports:
       - 8081:8081
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_ADMINUSERNAME: anonymous
+      ME_CONFIG_MONGODB_ADMINPASSWORD: guest
 
 # sftp server
   sftp:
     image: atmoz/sftp
     ports:
         - "2222:22"
-    command: foo:pass:::gbdserver
+    command: anonymous:guest:::gbdserver
 
 

@@ -1,7 +1,7 @@
 import pytest
 import os
 import subprocess
-import gbdhidro.database.test.db_test_credentials as cr
+import db_test_credentials as cr
 
 
 from gbdhidro.hobo import hobo

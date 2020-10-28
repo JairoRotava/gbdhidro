@@ -1,4 +1,10 @@
+import iso8601
+import re
+import argparse
+import logging
+from pymongo import MongoClient
 
+# Exemplos de query para mongoDB
 #db.getCollection('index').find({'database_uuid': 'gbdhidro/estacoes/eh-p05/EH-P05_20200226T190000Z_20200508T151000Z.nc'})
 #db.getCollection('index').find({geospatial_lat_min: { $gt: -31.4, $lt: 0}})
 #db.getCollection('index').find({geospatial_lat_min: { $gt: -32, $lt: -31.55}})
@@ -10,114 +16,14 @@
 #db.getCollection('index').find({database_uuid: { $regex: '2020', $options: 'i' }})
 #db.getCollection('index').find({keywords: { $elemMatch: {$regex: 'eh-p05', $options: 'i'}}})
 
-import argparse
-import os
-import glob
-import subprocess
-import logging
-import sys
-import os
-from netCDF4 import Dataset
-from shutil import copyfile
-import zipfile
-from pymongo import MongoClient
-from gbdhidro.netcdf import cf
-import numpy
-import datetime
-import iso8601
-
-DEBUG = False
-HERE = os.path.abspath(os.path.dirname(__file__))
-ERROR_CODE = 1
-LOG_FILE = 'upload.log'
-# Mongodb info
-MONGODB_URL = '127.0.0.1:27017'
-DATABASE = 'gbdhidro'
-COLLECTION = 'index'
-
-import argparse
-import os
-import glob
-import subprocess
-import logging
-import sys
-import os
-from netCDF4 import Dataset
-from shutil import copyfile
-import zipfile
-from pymongo import MongoClient
-from gbdhidro.netcdf import cf
-import numpy
-
-DEBUG = False
-HERE = os.path.abspath(os.path.dirname(__file__))
-INPUT_FOLDER = os.path.realpath('./test/output/hobo_ua_003_64')
-OUTPUT_FOLDER = os.path.realpath('../test/output/load_netcdf_to_db/database_root')
-CONVERTER_LIST = [os.path.join(HERE, '../station_raw_to_netcdf/hobo_ua_003_64/hobo_ua_003_64_to_netcdf.py')]
-FILE_OVERWRITE = True
-ERROR_CODE = 1
-LOG_FILE = 'upload.log'
-# Mongodb info
-#MONGODB_URL = '127.0.0.1:27017'
-#DATABASE = 'gbdhidro'
-#COLLECTION = 'index'
-# Docker mongodb
-MONGODB_URL = 'localhost:17017'
-DATABASE = 'gbdhidro'
-COLLECTION = 'index'
-USER = 'root'
-PASS = 'example'
-DATABASE_DEFAULT_PATH = os.path.join(os.path.expanduser('~'), 'gbdroot')
+DEFAULT_MONGO_DATABASE = 'gbdhidro'
+DEFAULT_COLLECTION = 'index'
+DEFAULT_MONGO_PORT = 27017
 
 # Inicia logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
 
-
-
-# para encontrar
-uuid = 'eh-p07'
-query_uuid = {'database_uuid': {'$regex': uuid, '$options': 'i'}}
-lat_min = -35.0
-lon_min = -52.64
-
-lat_max = -31.0
-lon_max = -52.62
-
-
-# Query para pegar qualquer dado que tenha um overlap com essa area de lat/lon
-query_lat_lon = {
-    '$and': [
-        {'geospatial_lat_min': {'$lte': lat_max}},
-        {'geospatial_lat_max': {'$gte': lat_min}},
-        {'geospatial_lon_min': {'$lte': lon_max}},
-        {'geospatial_lon_max': {'$gte': lon_min}}
-    ]
-}
-
-# Query para pegar qualquer dado que tenha algum overlap de tempo nessa faixa
-start_date = datetime.datetime(2018, 1, 1, 0, 0, 0)
-end_date = datetime.datetime(2021, 1, 28, 0, 0, 0)
-query_start_stop = {
-    '$and': [
-        {'time_coverage_start': {'$lte': end_date}},
-        {'time_coverage_end': {'$gte': start_date}}
-    ]
-}
-
-# Query para retornar alguma palavra chave
-# Case sensitive: talvez forçar que todas palavras chaves sejam em minusculo??
-keywords = ['EH-P05', 'EH-P06']
-query_keywords = {'keywords': {'$in': keywords}}
-
-query_list = []
-query_list.append(query_uuid)
-query_list.append(query_start_stop)
-
-# Query composta por querys menores
-query = {
-    '$and': query_list
-}
 
 def make_query(uuid=None, before=None, after=None, cornerlon=None, cornerlat=None, keywords=None, custom=None):
     query_list = []
@@ -187,6 +93,7 @@ def command_line():
     """
     TOOL_DESCRIPTION = 'Find item in database'
     parser = argparse.ArgumentParser(description=TOOL_DESCRIPTION)
+    parser.add_argument("index_user", type=str, help="index credential user:password@host:port/database")
     parser.add_argument('-uuid', type=str, help="uuid")
     parser.add_argument('-b', "--before", type=str, help="before datetime ISO8601 (eg. 2004-06-23T22:00:00Z)")
     parser.add_argument('-a', "--after", type=str, help="after datetime ISO8601 (eg. 2004-06-23T22:00:00Z)")
@@ -196,14 +103,25 @@ def command_line():
     parser.add_argument('-c', '--custom', type=str, help="custom search:  '(mongodb syntax)'")
     args = parser.parse_args()
 
-    uuid = args.uuid
-    #period = args.period
-    #region = args.region
+    # Credenciais para index/Mongo 'user:pass@hostname:port/path'
+    regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
+    pattern = re.compile(regex)
+    m = pattern.match(args.index_user)
+    mongo = {
+        'user': m.group('user'),
+        'hostname': m.group('hostname'),
+        'port': int(m.group('port')),
+        'password': m.group('password'),
+        'database': m.group('path')
+    }
 
-    #    Date and time in UTC
-    #    2020-10-16T19:27:42+00:00
-    #    2020-10-16T19:27:42Z
-    #    20201016T192742Z
+    if mongo['database'] is None:
+        mongo['database'] = DEFAULT_MONGO_DATABASE
+
+    if mongo['port'] is None:
+        mongo['port'] = DEFAULT_MONGO_PORT
+
+    uuid = args.uuid
 
     if args.cornerlon:
         cornerlon = args.cornerlon
@@ -216,7 +134,6 @@ def command_line():
         logger.debug('Corner latitude: {}'.format(cornerlat))
     else:
         cornerlat = None
-
 
     if args.before:
         before = iso8601.parse_date(args.before)
@@ -237,10 +154,9 @@ def command_line():
         keywords = None
     custom = args.custom
 
-    #client = MongoClient(MONGODB_URL)
-    client = MongoClient(MONGODB_URL, username=USER, password=PASS)
-    gbd = client[DATABASE]
-    index = gbd[COLLECTION]
+    client = MongoClient(mongo['hostname'], username=mongo['user'], password=mongo['password'], port=mongo['port'])
+    gbd = client[mongo['database']]
+    index = gbd[DEFAULT_COLLECTION]
     my_query = make_query(uuid=uuid, before=before, after=after, cornerlon=cornerlon, cornerlat=cornerlat,
                           keywords=keywords, custom=custom)
     logger.debug('Mongodb query: {}'.format(my_query))
@@ -257,10 +173,7 @@ def command_line():
 
 # Chamado da linha de comando
 if __name__ == "__main__":
-    if DEBUG:
-        logger.setLevel(level=logging.DEBUG)
-    else:
-        command_line()
+    command_line()
 
 
 

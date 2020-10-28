@@ -1,46 +1,9 @@
-# Converte os arquivos de entrada e salva no diretorio de saida mantendo a mesma estrutura de diretorio
-
-# Formato do diretorio de saida
-# O arquivo é salvo no caminho definido pelo atributo global database_uuid no NetCDF. Sem esse atributo o
-# metodo nao sabe onde colocar o arquivo. O atributo database_uuid deve ser um path de arquivo valido. A recomendacao
-# é utilizar somente letras minusculas, evitar espacos e caracteres especiais e acentos. O uuid deve ser unico no universo,
-# nao pode se repetir. Isso pode ser conseguido facilmente utilizando instituicao, projeto, sub projeto e outros valores.
-# Exemplos:
-# database_uuid = /ufpel/gbdhidro/estacao/eh-p01/eh-p01_fev2010-fev2020
-# database_uuid = /ufpel/gbdhidro/estacao/precipitacao/eh-p01/eh-p01_fev2010-fev2020
-# database_uuid = /ufpel/gbdhidro/estacao/processados/eh-p01/eh-p01_fev2010-fev2020
-# o uuid é uam forma bastante flexivel para organizar os dados da forma que for considerada mais conveniente pelo
-# usuario. Lembrar que ter isso de forma organizada ajuda em encontrar o arquivo porsterioemente.
-# a parte final sera o nome do arquivo na estrutura de difetorio e recomendasse colocar o ID da estacao, e periodo dos
-# dados para facilitar uma eventual busca manual dos dados.
-# gbd/<projeto>/<fonte>/<id>/arquivos onde:
-# por exemplo:
-# gbd/estacoes/observacionais/EH-P02/<projeto>_<source>_<id>_20200101T010101Z_20200202T020202Z
-# As informações de <projeto> <fonte> e <id> devem estra armazenadas em algum arquico e apartir do ID do arquivo
-# deve ser enviado automaticamnete para o diretorio correot. Pensar melhor como fazer isso. Os arquivos nc devem ter
-# o projeto e a fonte dos dados internamente
-#
-# Formato do rquivo: ID_Datainicail_datafinal
-# O ID deve ser único dentro de um projeto/fonte
-#
-# root/instituicao/projeto/fonte/id
-# institution/project/source/id
-# Cada arquivo. nc deve fornecer um path_id que como deve ser salvo os arquivos automaticamente na base da dados.
-# O formato é aberto ao dono do arquivo, mas deve ser com letras minusculas, e ser um nome de diretorio valido.
-# id deve ser único
-# id = gbdhidro/estacoes/ehp01/ehp01_2000123123_23042304
-##
-
+# Insere arquivo netcdf no gbdserver
 
 import argparse
-import os
-import glob
-import subprocess
 import logging
-import sys
 import os
 from netCDF4 import Dataset
-from shutil import copyfile
 import zipfile
 from pymongo import MongoClient
 from gbdhidro.netcdf import cf
@@ -50,46 +13,13 @@ import tempfile
 import shutil
 import re
 
-DEBUG = False
-HERE = os.path.abspath(os.path.dirname(__file__))
-INPUT_FOLDER = os.path.realpath('./test/output/hobo_ua_003_64')
-OUTPUT_FOLDER = os.path.realpath('../test/output/load_netcdf_to_db/database_root')
-CONVERTER_LIST = [os.path.join(HERE, '../station_raw_to_netcdf/hobo_ua_003_64/hobo_ua_003_64_to_netcdf.py')]
-FILE_OVERWRITE = True
-ERROR_CODE = 1
-LOG_FILE = 'upload.log'
-# Mongodb info
-#MONGODB_URL = '127.0.0.1:27017'
-#DATABASE = 'gbdhidro'
-#COLLECTION = 'index'
-# Docker mongodb
-MONGODB_URL = 'localhost:17017'
-DATABASE = 'gbdhidro'
-COLLECTION = 'index'
-USER = 'anonymous'
-PASS = 'guest'
-
-# mongo
-MONGO_HOSTNAME = 'localhost'
-MONGO_USER = 'anonymous'
-MONGO_PASSWORD = 'guest'
-MONGO_PORT = 17017
-MONGO_DATABASE = 'gbdhidro'
-MONGO_COLLECTION = 'index'
-
-
-# sftp
-SFTP_HOSTNAME = 'localhost'
-SFTP_USER = 'anonymous'
-SFTP_PASSWORD = 'guest'
-SFTP_PORT = 2222
-SFTP_ROOT = 'gbdserver'
-
-DEFAULT_SFTP_ROOT = 'gbdserver'
 DEFAULT_MONGO_DATABASE = 'gbdhidro'
+DEFAULT_MONGO_COLLECTION = 'index'
+DEFAULT_MONGO_PORT = 27017
 
+DEFAULT_SFTP_PORT = 22
+DEFAULT_SFTP_ROOT = 'gbdserver'
 
-DATABASE_DEFAULT_PATH = os.path.join(os.path.expanduser('~'), 'gbdroot')
 
 # Inicia logging
 logger = logging.getLogger(__name__)
@@ -97,21 +27,13 @@ logging.basicConfig(level=logging.WARNING)
 
 
 # TODO: precisa verificar como fazer quando o arquivo é sobreescrito, e como atualizar isso no index
-# mudar para put o nome da funcao
-
-
-#def get_input_files(folder):
-#    """
-#    Retorna todos os .py encontrados no diretorio e subdirecotrios folder
-#    """
-#    return glob.glob(os.path.join(folder, '**/*.*'), recursive=True)
 
 
 #insert_entry_db(metadata, index_cred['hostname'], index_cred['port'], index_cred['user'], index_cred['password'])
 def insert_entry_db(entry, hostname, port, user, password, database):
     client = MongoClient(hostname, port=port, username=user, password=password)
     gbd = client[database]
-    index = gbd[COLLECTION]
+    index = gbd[DEFAULT_MONGO_COLLECTION]
     index.insert_one(entry)
     client.close()
 
@@ -171,19 +93,17 @@ def put_netcdf(input_file, index_cred, ftp_cred, overwrite=False):
         except:
             raise AttributeError('ERROR: converting NetCDF metadata')
 
-        relative_folder = os.path.dirname(rootgrp.database_uuid)
 
         # Gera nome e pasta de destino a partir do uuid. Deixa tudo em lowercase para manter padrao
         # TODO: Checar se nomes sao validos para armazenar no sftp
         relative_folder = os.path.dirname(rootgrp.database_uuid).lower()
         dst_file = os.path.basename(rootgrp.database_uuid).lower()
 
+        # Comprime arquivo e envia pelo sftp
         tmpdir = tempfile.mkdtemp()
         dst_file_path = os.path.join(tmpdir, dst_file + '.zip')
-
         with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             zf.write(input_file, os.path.basename(input_file))
-
         save_sftp(dst_file_path, ftp_cred['root'] + '/' + relative_folder, ftp_cred['hostname'], ftp_cred['port'],
                   ftp_cred['user'], ftp_cred['password'])
         shutil.rmtree(tmpdir)
@@ -204,13 +124,7 @@ def command_line():
 
     # Credenciais para sftp
     if args.user is None:
-        sftp = {
-            'user': SFTP_USER,
-            'hostname': SFTP_HOSTNAME,
-            'password': SFTP_PASSWORD,
-            'port': SFTP_PORT,
-            'root': SFTP_ROOT
-        }
+        raise ValueError('credencial arquivos não fornecidda')
     else:
         # Interpreta user@hostname:port
         # regex = "((?P<user>\S+)@)?(?P<hostname>[^:]+)(:(?P<port>\d+))?"
@@ -232,22 +146,19 @@ def command_line():
     if sftp['root'] is None:
         sftp['root'] = DEFAULT_SFTP_ROOT
 
+    if sftp['port'] is None:
+        sftp['port'] = DEFAULT_SFTP_PORT
+
+
     # TODO: pedir pela senha no comando de linha. Isso é importante para permitir chamada segura sem a senha
     # exposta na linha de comando
     if sftp['password'] is None:
         raise ValueError('Senha para SFTP não declarada. TODO:Falta implementar')
 
-
     # Credenciais para index/Mongo
     if args.user_index is None:
-        mongo = {
-            'user': MONGO_USER,
-            'hostname': MONGO_HOSTNAME,
-            'port': MONGO_PORT,
-            'password': MONGO_PASSWORD
-        }
+        raise ValueError('credencial index não fornecidda')
     else:
-        #regex = "((?P<user>\S+)@)?(?P<hostname>[^:]+)(:(?P<port>\d+))?"
         # 'user:pass@hostname:port/path'
         regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
         pattern = re.compile(regex)
@@ -259,24 +170,20 @@ def command_line():
             'password': m.group('password'),
             'database': m.group('path')
         }
+    if mongo['port'] is None:
+        mongo['port'] = DEFAULT_MONGO_PORT
 
     if mongo['database'] is None:
         mongo['database'] = DEFAULT_MONGO_DATABASE
 
-    # TODO: pedir pela senha no comando de linha. Isso é importante para permitir chamada segura sem a senha
-    # exposta na linha de comando
-
     if mongo['password'] is None:
+        # TODO: pedir pela senha no comando de linha. Isso é importante para permitir chamada segura sem a senha
+        # exposta na linha de comando
         raise ValueError('Senha para index não declarada. TODO:Falta implementar')
 
     overwrite = args.overwrite
 
     input_files = args.input
-
-    #print('MongoDB information:')
-    #print('  hostname: {}'.format(mongo['hostname']))
-    #print('  database: {}'.format(MONGO_DATABASE))
-    #print('  colection: {}'.format(MONGO_COLLECTION))
 
     logger.debug('Input files: {}'.format(input_files))
     for input_file in input_files:
@@ -291,11 +198,4 @@ def command_line():
 
 # Chamado da linha de comando
 if __name__ == "__main__":
-    if DEBUG:
-        print('WARNING: Debug mode')
-        in_folder = os.path.realpath(INPUT_FOLDER)
-        out_folder = os.path.realpath(OUTPUT_FOLDER)
-        overwrite = FILE_OVERWRITE
-        put_netcdf(in_folder, out_folder, overwrite)
-    else:
-        command_line()
+    command_line()

@@ -5,6 +5,7 @@ import logging
 import os
 import pysftp
 import re
+import getpass
 
 DEFAULT_SFTP_ROOT = 'gbdserver'
 DEFAULT_SFTP_PORT = 22
@@ -12,6 +13,16 @@ DEFAULT_SFTP_PORT = 22
 # Inicia logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
+
+
+def get_credentials(user=None, password=None):
+    if user is None:
+        # Pede user
+        user = input('Username: ')
+    if password is None:
+        # Pede senha
+        password = getpass.getpass(prompt='password for {}: '.format(user))
+    return user, password
 
 
 def get_from_db(uuid, user, hostname, port, password, db_folder, dst_folder, overwrite=False):
@@ -52,25 +63,28 @@ def command_line():
     TOOL_DESCRIPTION = 'Get file from database'
     parser = argparse.ArgumentParser(description=TOOL_DESCRIPTION)
     parser.add_argument("uuid", type=str, help="file uuid")
-    parser.add_argument('--user', type=str, help="files access user:password@host:port/root")
+    parser.add_argument('--url', type=str, help="access url user:password@host:port/root")
     parser.add_argument("-dst", '--destination', type=str, help="destination folder")
     parser.add_argument('-ow', '--overwrite', help='overwrite output file', action='store_true')
     args = parser.parse_args()
 
 
-    if args.user is None:
+    if args.url is None:
         raise ValueError('Credencial para acesso dos arquivos nao fornecida')
         # TODO: pedir credencial
     else:
         # Interpreta user@hostname:port
         regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
         pattern = re.compile(regex)
-        m = pattern.match(args.user)
+        m = pattern.match(args.url)
         user = m.group('user')
         hostname = m.group('hostname')
         port = m.group('port')
         password = m.group('password')
         root = m.group('path')
+
+    # Pede user e password se nao foram fornecidos
+    user, password = get_credentials(user, password)
 
     if port is None:
         port = DEFAULT_SFTP_PORT

@@ -18,10 +18,7 @@ INDEX_USER = '{}:{}@{}:{}'.format(cr.MONGO_USER, cr.MONGO_PASSWORD, cr.MONGO_HOS
 
 
 def test_insert_netcdf():
-    """
-    Insere arquivos netcdf no banco de dados
-    """
-
+    # Teste insercao dos arquivos
     cmd = ['python', FILE_PATH] + INPUT_FILES + ['--user', USER, '--user_index', INDEX_USER, '-ow']
     print('\nComando teste -> ' + ' '.join(cmd))
     output = subprocess.run(cmd)
@@ -29,8 +26,16 @@ def test_insert_netcdf():
     if output.returncode != 0:
         # Processo retornou erro
         assert False
-    else:
-        assert True
+
+
+def test_insert_overwrite():
+    # Testa se ele não sobreescreve os arquivos
+    cmd = ['python', FILE_PATH] + INPUT_FILES + ['--user', USER, '--user_index', INDEX_USER]
+    print('\nComando teste -> ' + ' '.join(cmd))
+    output = subprocess.run(cmd, stderr=None)
+    if output.returncode == 0:
+        # Aqui esperamos que um erro seja gerado pois arquivo ja existe. Se nao gerar error (!=0) teste falha.
+        assert False
 
 
 

@@ -34,7 +34,11 @@ def insert_entry_db(entry, hostname, port, user, password, database):
     client = MongoClient(hostname, port=port, username=user, password=password)
     gbd = client[database]
     index = gbd[DEFAULT_MONGO_COLLECTION]
-    index.insert_one(entry)
+    # TODO: ver como utilizar entrada unique uuid - database_uuid é o padrão? Acho estranho isso
+    uuid = entry['database_uuid']
+    filter = {'database_uuid': uuid}
+    # Substitui ou insere novo parametro.
+    index.find_one_and_replace(filter, entry, upsert=True)
     client.close()
 
 
@@ -65,13 +69,17 @@ def convert_netcdf_attributes_to_mongo(dataset):
     return d
 
 
-def save_sftp(file, folder, hostname, port, username, password):
+def save_sftp(file, folder, hostname, port, username, password, overwrite=False):
     # Envia pelo sftp
     # TODO: por hora ignora o key do host. Verificar como fazer nesse caso para evitar o man in the middle
     cnopts = pysftp.CnOpts()
     cnopts.hostkeys = None
     with pysftp.Connection(host=hostname, username=username, password=password, port=port,
                            cnopts=cnopts) as sftp:
+        if not overwrite:
+            if sftp.exists(os.path.join(folder, os.path.basename(file))):
+                raise FileExistsError('Arquivo ja existe no banco de dados.')
+
         sftp.makedirs(folder)
         sftp.chdir(folder)
         sftp.put(file)
@@ -83,15 +91,16 @@ def put_netcdf(input_file, index_cred, ftp_cred, overwrite=False):
     logger.debug('Index credential: {}'.format(index_cred))
     logger.debug('SFTP credential: {}'.format(ftp_cred))
 
-    with Dataset(input_file, 'r') as rootgrp:
 
+    with Dataset(input_file, 'r') as rootgrp:
         if not hasattr(rootgrp, 'database_uuid'):
             raise AttributeError('ERROR: database_uuid global attribute not found in netcdf file')
-
         try:
             metadata = convert_netcdf_attributes_to_mongo(rootgrp)
         except:
             raise AttributeError('ERROR: converting NetCDF metadata')
+
+
 
 
         # Gera nome e pasta de destino a partir do uuid. Deixa tudo em lowercase para manter padrao
@@ -105,7 +114,7 @@ def put_netcdf(input_file, index_cred, ftp_cred, overwrite=False):
         with zipfile.ZipFile(dst_file_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             zf.write(input_file, os.path.basename(input_file))
         save_sftp(dst_file_path, ftp_cred['root'] + '/' + relative_folder, ftp_cred['hostname'], ftp_cred['port'],
-                  ftp_cred['user'], ftp_cred['password'])
+                  ftp_cred['user'], ftp_cred['password'], overwrite=overwrite)
         shutil.rmtree(tmpdir)
 
         # Adiciona no index do mongodb

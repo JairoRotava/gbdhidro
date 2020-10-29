@@ -4,8 +4,6 @@ import subprocess
 import db_test_credentials as cr
 
 
-
-
 here = os.path.abspath(os.path.dirname(__file__))
 UUID = 'gbdhidro/estacoes/eh-p02/eh-p02_20191212t150000z_20200226t200800z.nc'
 DST_FOLDER = os.path.realpath(os.path.join(here, './output/get'))

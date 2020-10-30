@@ -257,7 +257,7 @@ def hobo_to_netcdf(input_file, output, config_file=None, json_file=None, overwri
     #if station_time_resolution == 'PT5M':
     #    delta = timedelta(minutes=5)
     #elif station_time_resolution == 'PT1D':
-    #    delta = timedelta(days=1)
+    #    delta = timedelta(days=1)nc_
     #else:
     #    print('Erro. Intervalo de tempo ainda nao implementada {}'.format(station_time_resolution))
     #    exit(ERROR_CODE)
@@ -278,8 +278,6 @@ def hobo_to_netcdf(input_file, output, config_file=None, json_file=None, overwri
     station_name[:] = stringtoarr(station_id, nameDim.size)
     # Insere informacoes sobre a precipitacao
     nc_var = nc_file.get_variable('precipitation')
-    nc_file.rootgrp.keywords = [nc_var.standard_name, nc_var.units, station_id]
-    nc_file.rootgrp.key_variables = 'precipitation'
 
     FILL_VALUE = nc_var._FillValue
     #data_var = table[variable_col]
@@ -309,18 +307,27 @@ def hobo_to_netcdf(input_file, output, config_file=None, json_file=None, overwri
     #time_resolution_str = station_time_resolution
 
     # Atualiza metadados
-    nc_file.rootgrp.geospatial_lat_min = min_lat
-    nc_file.rootgrp.geospatial_lat_max = max_lat
-    nc_file.rootgrp.geospatial_lon_min = min_lon
-    nc_file.rootgrp.geospatial_lon_max = max_lon
-    nc_file.rootgrp.time_coverage_start = min_time_str
-    nc_file.rootgrp.time_coverage_end = max_time_str
-    nc_file.rootgrp.time_coverage_duration = time_delta_str
+    gbd_index = nc_file.get_group('gbd_index')
+    gbd_index.geospatial_lat_min = min_lat
+    gbd_index.geospatial_lat_max = max_lat
+    gbd_index.geospatial_lon_min = min_lon
+    gbd_index.geospatial_lon_max = max_lon
+    gbd_index.time_coverage_start = min_time_str
+    gbd_index.time_coverage_end = max_time_str
+    gbd_index.time_coverage_duration = time_delta_str
     #nc_file.rootgrp.time_coverage_resolution = time_resolution_str
     uuid = '{}/{}_{}_{}.nc'.format(station_uuid, station_id, first_day_str, last_day_str)
-    nc_file.rootgrp.database_uuid = uuid
-    nc_file.rootgrp.date_created = cf.datetime2str(datetime.now(timezone.utc))
-    nc_file.rootgrp.history = '({}) Created with {}'.format(nc_file.rootgrp.date_created, TOOL_NAME)
+    gbd_index.uuid = uuid
+    gbd_index.date_created = cf.datetime2str(datetime.now(timezone.utc))
+    gbd_index.history = '({}) Created with {}'.format(gbd_index.date_created, TOOL_NAME)
+    gbd_index.keywords = [nc_var.standard_name, nc_var.units, station_id]
+    gbd_index.key_variables = 'precipitation'
+
+    # Gera dados do grupo gbd_index
+    #nc_file.rootgrp.createGroup('gbd_index')
+    #nc_file.rootgrp.gbd_index.uuid = uuid
+   
+    
     nc_file.close()
 
     # Imprime resultado

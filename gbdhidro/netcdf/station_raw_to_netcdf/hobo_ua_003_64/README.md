@@ -64,4 +64,7 @@ sendo utilizado por agências de dados climáticos observacionais, entretanto ai
 sem resposta para esse tipo de aplicação. Acreditasse que isso deve ser corrigido no padrão em breve.
 Todos os metadados incluídos no arquivo NetCDF podem ser utilizados em um serviço de indexação para que os
 mesmos sejam encontrador facilmente. 
+
+## Como fazer o dump dos arquivos netcdf
+```ncdump {nome_do_arquivo} -h```
  

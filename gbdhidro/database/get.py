@@ -6,6 +6,7 @@ import os
 import pysftp
 import re
 import getpass
+import gbdhidro.database.credentials as cred
 
 DEFAULT_SFTP_ROOT = 'gbdserver'
 DEFAULT_SFTP_PORT = 22
@@ -74,17 +75,24 @@ def command_line():
         # TODO: pedir credencial
     else:
         # Interpreta user@hostname:port
-        regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
-        pattern = re.compile(regex)
-        m = pattern.match(args.url)
-        user = m.group('user')
-        hostname = m.group('hostname')
-        port = m.group('port')
-        password = m.group('password')
-        root = m.group('path')
+        #regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
+        #pattern = re.compile(regex)
+        #m = pattern.match(args.url)
+        ##user = m.group('user')
+        #hostname = m.group('hostname')
+        #port = m.group('port')
+        #password = m.group('password')
+        #root = m.group('path')
+
+        sftp = cred.extract(args.url)
+        user = sftp['user']
+        hostname = sftp['hostname']
+        port = sftp['port']
+        password = sftp['password']
+        root = sftp['path']
 
     # Pede user e password se nao foram fornecidos
-    user, password = get_credentials(user, password)
+    user, password = cred.ask_user_and_pass(user, password)
 
     if port is None:
         port = DEFAULT_SFTP_PORT

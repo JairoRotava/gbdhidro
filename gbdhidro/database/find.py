@@ -3,6 +3,7 @@ import re
 import argparse
 import logging
 from pymongo import MongoClient
+import gbdhidro.database.credentials as cred
 
 # Exemplos de query para mongoDB
 #db.getCollection('index').find({'database_uuid': 'gbdhidro/estacoes/eh-p05/EH-P05_20200226T190000Z_20200508T151000Z.nc'})
@@ -104,16 +105,21 @@ def command_line():
     args = parser.parse_args()
 
     # Credenciais para index/Mongo 'user:pass@hostname:port/path'
-    regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
-    pattern = re.compile(regex)
-    m = pattern.match(args.index_user)
-    mongo = {
-        'user': m.group('user'),
-        'hostname': m.group('hostname'),
-        'port': int(m.group('port')),
-        'password': m.group('password'),
-        'database': m.group('path')
-    }
+    #regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
+    #pattern = re.compile(regex)
+    #m = pattern.match(args.index_user)
+    #mongo = {
+    #    'user': m.group('user'),
+    #    'hostname': m.group('hostname'),
+    #    'port': int(m.group('port')),
+    #    'password': m.group('password'),
+    #    'database': m.group('path')
+    #}
+
+    mongo = cred.extract(args.index_user)
+    mongo['database'] = mongo['path']
+
+    mongo['user'], mongo['password'] = cred.ask_user_and_pass(mongo['user'], mongo['password'], prompt='Index credentials')
 
     if mongo['database'] is None:
         mongo['database'] = DEFAULT_MONGO_DATABASE

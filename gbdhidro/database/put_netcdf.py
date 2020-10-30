@@ -12,6 +12,8 @@ import pysftp
 import tempfile
 import shutil
 import re
+import gbdhidro.database.credentials as cred
+
 
 DEFAULT_MONGO_DATABASE = 'gbdhidro'
 DEFAULT_MONGO_COLLECTION = 'index'
@@ -100,9 +102,6 @@ def put_netcdf(input_file, index_cred, ftp_cred, overwrite=False):
         except:
             raise AttributeError('ERROR: converting NetCDF metadata')
 
-
-
-
         # Gera nome e pasta de destino a partir do uuid. Deixa tudo em lowercase para manter padrao
         # TODO: Checar se nomes sao validos para armazenar no sftp
         relative_folder = os.path.dirname(rootgrp.database_uuid).lower()
@@ -140,55 +139,57 @@ def command_line():
         # BUG: existe um problema com isso, pois se o password tiver @/: vai dar pau. Nesse caso user e pass precisam ser
         # enconded (SEI LA OQUE SIGNIFICA ISSO) RESOLVER NO FUTURO
         # 'user:pass@hostname:port/path'
-        regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
-        pattern = re.compile(regex)
-        m = pattern.match(args.user)
-        sftp = {
-            'user': m.group('user'),
-            'hostname': m.group('hostname'),
-            'port': int(m.group('port')),
-            'password': m.group('password'),
-            'root': m.group('path')
-        }
+        #regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
+        #pattern = re.compile(regex)
+        #m = pattern.match(args.user)
+        #sftp = {
+        #    'user': m.group('user'),
+        #    'hostname': m.group('hostname'),
+        #    'port': int(m.group('port')),
+        ##    'password': m.group('password'),
+         #   'root': m.group('path')
+        #}
+        sftp = cred.extract(args.user)
 
     # Use default root is not defined
+    sftp['root'] = sftp['path']
     if sftp['root'] is None:
         sftp['root'] = DEFAULT_SFTP_ROOT
 
     if sftp['port'] is None:
         sftp['port'] = DEFAULT_SFTP_PORT
 
-
-    # TODO: pedir pela senha no comando de linha. Isso é importante para permitir chamada segura sem a senha
-    # exposta na linha de comando
-    if sftp['password'] is None:
-        raise ValueError('Senha para SFTP não declarada. TODO:Falta implementar')
+    sftp['user'], sftp['password'] = cred.ask_user_and_pass(sftp['user'], sftp['password'], prompt='SFTP credentials')
 
     # Credenciais para index/Mongo
     if args.user_index is None:
         raise ValueError('credencial index não fornecidda')
     else:
         # 'user:pass@hostname:port/path'
-        regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
-        pattern = re.compile(regex)
-        m = pattern.match(args.user_index)
-        mongo = {
-            'user': m.group('user'),
-            'hostname': m.group('hostname'),
-            'port': int(m.group('port')),
-            'password': m.group('password'),
-            'database': m.group('path')
-        }
+        #regex = "(((?P<user>[^:@]+)(:(?P<password>[^@]+))?)@)?(?P<hostname>[^:]+)(:(?P<port>[^/]+))?(/(?P<path>.+))?"
+        #pattern = re.compile(regex)
+        #m = pattern.match(args.user_index)
+        #mongo = {
+        ##    'user': m.group('user'),
+         #   'hostname': m.group('hostname'),
+         #   'port': int(m.group('port')),
+         #   'password': m.group('password'),
+         #   'database': m.group('path')
+        #}
+        mongo = cred.extract(args.user_index)
+
     if mongo['port'] is None:
         mongo['port'] = DEFAULT_MONGO_PORT
 
+    mongo['database'] = mongo['path']
     if mongo['database'] is None:
         mongo['database'] = DEFAULT_MONGO_DATABASE
 
-    if mongo['password'] is None:
+    #if mongo['password'] is None:
         # TODO: pedir pela senha no comando de linha. Isso é importante para permitir chamada segura sem a senha
         # exposta na linha de comando
-        raise ValueError('Senha para index não declarada. TODO:Falta implementar')
+    #    raise ValueError('Senha para index não declarada. TODO:Falta implementar')
+    mongo['user'], mongo['password'] = cred.ask_user_and_pass(mongo['user'], mongo['password'], prompt='Index credentials')
 
     overwrite = args.overwrite
 

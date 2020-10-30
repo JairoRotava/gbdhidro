@@ -95,39 +95,59 @@
     "groups": [
         {
             "createGroup": {
-                "groupname": "gbd_index"
+                "groupname": "grupo1"
             },
             "attributes": [
                 {
-                    "uuid": "",
-                    "index_version": "",
-                    "title": "Observed precipitation raw data",
-                    "summary": "Observed precipitation data",
-                    "keywords": "",
-                    "institution": "Universidade Federal de Pelotas",
-                    "instrument": "HOBO Pendant Event 64K (UA-003-64)",
-                    "history": "",
-                    "comment": "",
-                    "date_created": "",
-                    "creator_name": "Grupo de Pesquisa em Hidrologia e Modelagem Hidrológica em Bacias Hidrográficas",
-                    "creator_url": "https://wp.ufpel.edu.br/hidrologiaemodelagemhidrologica/",
-                    "geospatial_lat_min": 0.0,
-                    "geospatial_lat_max": 0.0,
-                    "geospatial_lat_units": "degrees_north",
-                    "geospatial_lon_min": 0.0,
-                    "geospatial_lon_max": 0.0,
-                    "geospatial_lon_units": "degrees_east",
-                    "geospatial_vertical_min": 0.0,
-                    "geospatial_vertical_max": 0.0,
-                    "geospatial_vertical_units": "m",
-                    "geospatial_vertical_resolution": 1.0,
-                    "geospatial_vertical_positive": "",
-                    "time_coverage_start": "",
-                    "time_coverage_end": "",
-                    "time_coverage_duration": "",
-                    "key_variables": ""
+                    "jairo": "jairo",
+                    "title": "Observed precipitation raw data"
                 }
             ]
+        },
+        {
+            "createGroup": {
+                "groupname": "grupo2"
+            },
+            "attributes": [
+                {
+                    "atributos": "grupo2"
+                }
+            ]
+
+        }
+    ],
+    "attributes": [
+        {
+            "jairo": "jairo",
+            "title": "Observed precipitation raw data",
+            "summary": "Observed precipitation data",
+            "keywords": "",
+            "Conventions": "CF-1.7",
+
+            "institution": "Universidade Federal de Pelotas",
+            "instrument": "HOBO Pendant Event 64K (UA-003-64)",
+            "history": "",
+
+            "id": "",
+            "comment": "",
+            "date_created": "",
+            "creator_name": "Grupo de Pesquisa em Hidrologia e Modelagem Hidrológica em Bacias Hidrográficas",
+            "creator_url": "https://wp.ufpel.edu.br/hidrologiaemodelagemhidrologica/",
+            "geospatial_lat_min": 0.0,
+            "geospatial_lat_max": 0.0,
+            "geospatial_lat_units": "degrees_north",
+            "geospatial_lon_min": 0.0,
+            "geospatial_lon_max": 0.0,
+            "geospatial_lon_units": "degrees_east",
+            "geospatial_vertical_min": 0.0,
+            "geospatial_vertical_max": 0.0,
+            "geospatial_vertical_units": "m",
+            "geospatial_vertical_resolution": 1.0,
+            "geospatial_vertical_positive": "",
+            "time_coverage_start": "",
+            "time_coverage_end": "",
+            "time_coverage_duration": "",
+            "key_variables": ""
         }
     ]
 }
